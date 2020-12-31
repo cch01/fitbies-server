@@ -1,4 +1,7 @@
+import { UseGuards } from "@nestjs/common";
 import { Args, Mutation, Resolver, Query, ID, ResolveField, Parent, Root } from "@nestjs/graphql";
+import { CurrentUser } from "src/decorators/user.decorator";
+import { AuthGuard } from "src/decorators/auth.guard";
 import {  SignInInput, SignUpInput, UpdateUserInput } from "./dto/user.input";
 import { SignInPayload } from "./dto/user.payload";
 import { User } from "./user.model";
@@ -13,6 +16,7 @@ export class UserResolver {
   constructor(private readonly userService: UserService) { }
 
   @Query(returns => User, { nullable: true })
+  @UseGuards(AuthGuard)
   async user(
     @Args('_id', { type: () => ID, nullable: true }) _id: string,
     @Args('email', { type: () => String, nullable: true }) email: string
@@ -34,7 +38,7 @@ export class UserResolver {
     return await this.userService.signIn(signInInput);
   }
 
-  @Mutation(returns => User, { nullable: true })
+  @Mutation(returns => User, { nullable: true }) 
   async updateUser(
     @Args('updateUserInput') updateUserInput: UpdateUserInput
   ) {

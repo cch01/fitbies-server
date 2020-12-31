@@ -11,6 +11,6 @@ export class SessionService {
     ){}
 
   createSession = async(userId: string): Promise<String> => {
-    return (await new this.sessionModel(new mongo.ObjectID(userId)).save()).sid;
+    return (await new this.sessionModel({userId: new mongo.ObjectID(userId)}).save()).sid;
   }
 }

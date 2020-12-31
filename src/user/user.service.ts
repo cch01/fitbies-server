@@ -29,7 +29,7 @@ export class UserService {
 
   signIn = async (signInInput: SignInInput): Promise<SignInPayload>  => {
     const user = await this.userModel.findOne({ email: signInInput.email });
-    
+    console.log(user);
     if(!user || (user && !this.validatePassword(user, signInInput.password))) {
       throw new ApolloError('User / password mismatch')
     }
@@ -42,7 +42,7 @@ export class UserService {
     }
   }
 
-  validatePassword = (user: User, password: string) => {
+  validatePassword = (user: User, password: string): boolean => {
     return bcrypt.compareSync(password, user.password);
   }
 

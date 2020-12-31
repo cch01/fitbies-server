@@ -8,6 +8,6 @@ import { SessionService } from './session.service';
     SessionModel
   ],
   providers: [SessionService],
-  exports: [SessionService]
+  exports: [SessionService, SessionModel]
 })
 export class SessionModule { }
