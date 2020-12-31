@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { UserModel } from 'src/user/user.model';
+import { UserModel } from 'src/modules/user/user.model';
 import { SessionModel } from './session.model';
 import { SessionService } from './session.service';
 

@@ -2,8 +2,8 @@ import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/commo
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { SessionDocument } from 'src/session/session.model';
-import { UserDocument } from 'src/user/user.model';
+import { SessionDocument } from 'src/modules/session/session.model';
+import { UserDocument } from 'src/modules/user/user.model';
 import * as moment from 'moment';
 import { AuthenticationError } from 'apollo-server-express';
 

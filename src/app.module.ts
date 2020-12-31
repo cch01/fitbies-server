@@ -4,9 +4,9 @@ import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
-import { UserModule } from './user/user.module';
-import { CommonModule } from './common/common.module';
-import { SessionModule } from './session/session.module';
+import { UserModule } from './modules/user/user.module';
+import { CommonModule } from './modules/common/common.module';
+import { SessionModule } from './modules/session/session.module';
 
 console.log(process.env.DB_CONNECTION_URI);
 @Module({

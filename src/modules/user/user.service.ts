@@ -5,7 +5,7 @@ import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
 import { User, UserDocument } from './user.model';
 import { ApolloError, UserInputError } from 'apollo-server-express';
 import * as bcrypt from 'bcrypt';
-import { SessionService } from 'src/session/session.service';
+import { SessionService } from 'src/modules/session/session.service';
 import { SignInPayload } from './dto/user.payload';
 
 @Injectable()
