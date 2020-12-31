@@ -16,18 +16,37 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type SignInPayload {
+  token: String!
+  user: User!
+}
+
 type Query {
   user(email: String, _id: ID): User
   healthCheck: Boolean!
 }
 
 type Mutation {
-  signUp(CreateUserInput: CreateUserInput!): User
+  signUp(signUpInput: SignUpInput!): User
+  signIn(signInInput: SignInInput!): SignInPayload
+  updateUser(updateUserInput: UpdateUserInput!): User
 }
 
-input CreateUserInput {
+input SignUpInput {
   firstName: String!
   lastName: String!
   email: String!
   password: String!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  _id: String
+  firstName: String
+  lastName: String
+  email: String
 }

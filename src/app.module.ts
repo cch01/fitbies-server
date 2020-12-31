@@ -7,6 +7,7 @@ import { join } from 'path';
 import { UserModule } from './user/user.module';
 import { CommonModule } from './common/common.module';
 import { async } from 'rxjs';
+import { SessionModule } from './session/session.module';
 
 console.log(process.env.DB_CONNECTION_URI);
 @Module({
@@ -16,7 +17,7 @@ console.log(process.env.DB_CONNECTION_URI);
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       context: async ({ req }) => {
         const auth = req.headers.Authorization || req.headers.authorization;
-        
+        //TODO: handle auth
         return {
           ...req,
           auth
@@ -25,6 +26,7 @@ console.log(process.env.DB_CONNECTION_URI);
     }),
     UserModule,
     CommonModule,
+    SessionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
