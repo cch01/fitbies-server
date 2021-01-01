@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
 import { User, UserDocument } from './user.model';
-import { ApolloError, UserInputError } from 'apollo-server-express';
+import { ApolloError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import * as bcrypt from 'bcrypt';
 import { SessionService } from 'src/modules/session/session.service';
 import { SignInPayload } from './dto/user.payload';
@@ -12,13 +12,13 @@ import { SignInPayload } from './dto/user.payload';
 export class UserService {
   constructor(@InjectModel('user') private userModel: Model<UserDocument>, private readonly sessionService: SessionService) { }
 
-  createUser = async (signUpInput: SignUpInput): Promise<User> => {
+  async createUser(signUpInput: SignUpInput): Promise<User> {
     const encryptedPw = bcrypt.hashSync(signUpInput.password, bcrypt.genSaltSync(10));
     const newUser = new this.userModel({ ...signUpInput, password: encryptedPw });
     return newUser.save();
   }
 
-  updateUser = async ({ _id, ...rest }: UpdateUserInput) => {
+  async updateUser({ _id, ...rest }: UpdateUserInput) {
     const user = await this.userModel.findById(_id);
     if (!user) {
       throw new ApolloError('User not found')
@@ -27,7 +27,7 @@ export class UserService {
     return user.set(rest).save();
   }
 
-  signIn = async (signInInput: SignInInput): Promise<SignInPayload> => {
+  async signIn(signInInput: SignInInput): Promise<SignInPayload> {
     const user = await this.userModel.findOne({ email: signInInput.email });
     console.log('signin in user', user);
     if (!user || (user && !this.validatePassword(user, signInInput.password))) {
@@ -42,11 +42,11 @@ export class UserService {
     }
   }
 
-  validatePassword = (user: User, password: string): boolean => {
+  validatePassword(user: User, password: string): boolean {
     return bcrypt.compareSync(password, user.password);
   }
 
-  findUser = async (currentUser: User, { _id, email }: { _id: string, email: string }): Promise<User> => {
+  async findUser(currentUser: User, { _id, email }: { _id: string, email: string }): Promise<User> {
     if (!_id && !email) {
       throw new UserInputError('id or email must be provided.');
     }
@@ -63,7 +63,7 @@ export class UserService {
     return user;
   }
 
-  isPermitToReadUser = async (user: User, targetUserId: string): Promise<boolean> => {
+  async isPermitToReadUser(user: User, targetUserId: string): Promise<boolean> {
     switch (user.type) {
       case 'ADMIN': return true;
       default:
@@ -72,7 +72,7 @@ export class UserService {
     return true;
   }
 
-  isPermitToWrite = async (user: User, targetUserId: string): Promise<boolean> => {
+  async isPermitToWrite(user: User, targetUserId: string): Promise<boolean> {
     switch (user.type) {
       case 'ADMIN': return true;
       default:

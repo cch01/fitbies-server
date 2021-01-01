@@ -8,9 +8,9 @@ import { SessionDocument } from './session.model';
 export class SessionService {
   constructor(
     @InjectModel('session') private sessionModel: Model<SessionDocument>,
-    ){}
+  ) { }
 
-  createSession = async(userId: string): Promise<String> => {
-    return (await new this.sessionModel({user: userId}).save()).sid;
+  async createSession(userId: string): Promise<String> {
+    return (await new this.sessionModel({ user: userId }).save()).sid;
   }
 }

@@ -31,7 +31,14 @@ export class UserResolver {
 
     return await this.userService.findUser(currentUser, { _id, email });
   }
-  
+
+  @Query(returns => User)
+  @UseGuards(AuthGuard)
+  async me(
+    @CurrentUser() currentUser: User,
+  ): Promise<User> {
+    return currentUser;
+  }
 
   @Mutation(returns => User, { nullable: true })
   async signUp(
