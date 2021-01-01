@@ -2,10 +2,13 @@ import { UseGuards } from "@nestjs/common";
 import { Args, Mutation, Resolver, Query, ID, ResolveField, Parent, Root } from "@nestjs/graphql";
 import { CurrentUser } from "src/decorators/user.decorator";
 import { AuthGuard } from "src/decorators/auth.guard";
-import {  SignInInput, SignUpInput, UpdateUserInput } from "./dto/user.input";
+import { SignInInput, SignUpInput, UpdateUserInput } from "./dto/user.input";
 import { SignInPayload } from "./dto/user.payload";
-import { User } from "./user.model";
+import { User, UserDocument } from "./user.model";
 import { UserService } from "./user.service";
+import { ApolloError, ForbiddenError, UserInputError } from "apollo-server-express";
+import { Model } from "mongoose";
+import { InjectModel } from "@nestjs/mongoose";
 
 
 
@@ -13,16 +16,22 @@ import { UserService } from "./user.service";
 @Resolver(of => User)
 export class UserResolver {
 
-  constructor(private readonly userService: UserService) { }
+  constructor(
+    private readonly userService: UserService,
+    @InjectModel('user') private readonly userModel: Model<UserDocument>
+  ) { }
 
   @Query(returns => User, { nullable: true })
   @UseGuards(AuthGuard)
   async user(
     @Args('_id', { type: () => ID, nullable: true }) _id: string,
-    @Args('email', { type: () => String, nullable: true }) email: string
+    @Args('email', { type: () => String, nullable: true }) email: string,
+    @CurrentUser() currentUser: User,
   ): Promise<User> {
-    return await this.userService.findOne({ _id, email });
+
+    return await this.userService.findUser(currentUser, { _id, email });
   }
+  
 
   @Mutation(returns => User, { nullable: true })
   async signUp(
@@ -38,7 +47,7 @@ export class UserResolver {
     return await this.userService.signIn(signInInput);
   }
 
-  @Mutation(returns => User, { nullable: true }) 
+  @Mutation(returns => User, { nullable: true })
   @UseGuards(AuthGuard)
   async updateUser(
     @Args('updateUserInput') updateUserInput: UpdateUserInput

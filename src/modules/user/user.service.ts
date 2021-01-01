@@ -18,7 +18,7 @@ export class UserService {
     return newUser.save();
   }
 
-  updateUser = async ({_id, ...rest}: UpdateUserInput) => {
+  updateUser = async ({ _id, ...rest }: UpdateUserInput) => {
     const user = await this.userModel.findById(_id);
     if (!user) {
       throw new ApolloError('User not found')
@@ -27,15 +27,15 @@ export class UserService {
     return user.set(rest).save();
   }
 
-  signIn = async (signInInput: SignInInput): Promise<SignInPayload>  => {
+  signIn = async (signInInput: SignInInput): Promise<SignInPayload> => {
     const user = await this.userModel.findOne({ email: signInInput.email });
-    console.log('signin in user',user);
-    if(!user || (user && !this.validatePassword(user, signInInput.password))) {
+    console.log('signin in user', user);
+    if (!user || (user && !this.validatePassword(user, signInInput.password))) {
       throw new ApolloError('User / password mismatch')
     }
 
     const token = await this.sessionService.createSession(user.id);
-    console.log('token',token)
+    console.log('token', token)
     return {
       token,
       user
@@ -46,15 +46,38 @@ export class UserService {
     return bcrypt.compareSync(password, user.password);
   }
 
-  findOne = async ({ _id, email }: { _id: string, email: string }): Promise<User> => {
+  findUser = async (currentUser: User, { _id, email }: { _id: string, email: string }): Promise<User> => {
     if (!_id && !email) {
       throw new UserInputError('id or email must be provided.');
     }
-    const user = await this.userModel.findOne({ ..._id && { _id }, ...email && { email } });
+
+    const user = !!currentUser && await this.userModel.findOne({ ..._id && { _id }, ...email && { email } });
+
     if (!user) {
       throw new ApolloError('user not found');
     }
 
+    if (!await this.isPermitToReadUser(currentUser, user._id)) {
+      throw new ForbiddenError('Permission denied');
+    }
     return user;
+  }
+
+  isPermitToReadUser = async (user: User, targetUserId: string): Promise<boolean> => {
+    switch (user.type) {
+      case 'ADMIN': return true;
+      default:
+        if (!user || user._id.toString() != targetUserId) return false;
+    }
+    return true;
+  }
+
+  isPermitToWrite = async (user: User, targetUserId: string): Promise<boolean> => {
+    switch (user.type) {
+      case 'ADMIN': return true;
+      default:
+        if (!user || user._id.toString() !== targetUserId) return false;
+    }
+    return true;
   }
 }

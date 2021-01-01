@@ -21,16 +21,15 @@ export class AuthGuard implements CanActivate {
 
     const token = auth.replace(/^Bearer\s/, '');
 
-    const session = await (await this.sessionModel.findOne({ sid: token, lastLogin: { $gte: moment().subtract(30, 'days').toDate() } })).populate('userId').execPopulate();
-
-    console.log(session)
+    const session = await (await this.sessionModel.findOne({ sid: token, lastLogin: { $gte: moment().subtract(30, 'days').toDate() } }))
     
     if (!session) {
       throw new AuthenticationError('Token expired')
     }
+
     await session.set('lastLogin', new Date()).save();
     
-    ctx.user = session.user;
+    ctx.user = (await session.populate('user').execPopulate()).user;
     return true;
   }
 }
