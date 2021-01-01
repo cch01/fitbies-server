@@ -1,5 +1,7 @@
-import { Field, InputType } from "@nestjs/graphql";
-import { InputTypeFactory } from "@nestjs/graphql/dist/schema-builder/factories/input-type.factory";
+import { Field, InputType, registerEnumType } from "@nestjs/graphql";
+import { UserType } from "../user.model";
+
+
 @InputType()
 export class SignUpInput {
   @Field()
@@ -13,6 +15,9 @@ export class SignUpInput {
 
   @Field()
   password: string;
+
+  @Field(type => UserType)
+  type: UserType;
 } 
 
 @InputType()

@@ -44,6 +44,9 @@ export class UserResolver {
   async signUp(
     @Args('signUpInput') signUpInput: SignUpInput
   ) {
+    if(signUpInput.type === "ADMIN") {
+      throw new ForbiddenError('Invalid input')
+    }
     return await this.userService.createUser(signUpInput);
   }
 
