@@ -11,10 +11,14 @@ import { SessionModule } from './modules/session/session.module';
 console.log(process.env.DB_CONNECTION_URI);
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.DB_CONNECTION_URI, { useNewUrlParser: true }),
+    MongooseModule.forRoot(process.env.DB_CONNECTION_URI, {
+      useNewUrlParser: true,
+    }),
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      context: async ({ req }) => { req }
+      context: async ({ req }) => {
+        req;
+      },
     }),
     UserModule,
     CommonModule,
@@ -23,4 +27,4 @@ console.log(process.env.DB_CONNECTION_URI);
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

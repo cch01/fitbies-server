@@ -1,6 +1,5 @@
-import { Field, InputType, registerEnumType } from "@nestjs/graphql";
-import { UserType } from "../user.model";
-
+import { Field, InputType } from '@nestjs/graphql';
+import { UserType } from '../user.model';
 
 @InputType()
 export class SignUpInput {
@@ -16,27 +15,24 @@ export class SignUpInput {
   @Field()
   password: string;
 
-  @Field(type => UserType)
+  @Field((type) => UserType)
   type: UserType;
-} 
+}
 
 @InputType()
 export class UpdateUserInput {
-  @Field({ nullable: true})
+  @Field({ nullable: true })
   _id: string;
 
-  @Field({ nullable: true})
+  @Field({ nullable: true })
   firstName: string;
 
-  @Field({ nullable: true})
+  @Field({ nullable: true })
   lastName: string;
 
-  @Field({ nullable: true})
+  @Field({ nullable: true })
   email: string;
-
-} 
-
-
+}
 
 @InputType()
 export class SignInInput {

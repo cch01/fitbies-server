@@ -1,14 +1,13 @@
-import { Field, ID, ObjectType, registerEnumType } from "@nestjs/graphql";
-import { MongooseModule, Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-
 
 export type UserDocument = User & Document;
 
 @Schema({ collection: 'users', timestamps: true })
 @ObjectType()
 export class User {
-  @Field(type => ID)
+  @Field((type) => ID)
   _id: string;
 
   @Prop({ required: true })
@@ -27,9 +26,9 @@ export class User {
   password?: string;
 
   @Prop({ required: true })
-  @Field(type => UserType, { nullable: true })
+  @Field((type) => UserType, { nullable: true })
   type?: UserType;
-   
+
   @Field({ nullable: true })
   createdAt?: Date;
 
@@ -38,15 +37,16 @@ export class User {
 }
 
 export enum UserType {
-  CLIENT="CLIENT",
-  ADMIN="ADMIN"
+  CLIENT = 'CLIENT',
+  ADMIN = 'ADMIN',
 }
 
 registerEnumType(UserType, {
   name: 'UserType',
 });
 
-
 const UserSchema = SchemaFactory.createForClass(User);
 
-export const UserModel = MongooseModule.forFeature([{ name: 'user', schema: UserSchema }]) 
+export const UserModel = MongooseModule.forFeature([
+  { name: 'user', schema: UserSchema },
+]);
