@@ -18,18 +18,18 @@ export class UserService {
     return newUser.save();
   }
 
-  updateUser = async (updateUserInput: UpdateUserInput) => {
-    const user = await this.userModel.findById(updateUserInput._id);
+  updateUser = async ({_id, ...rest}: UpdateUserInput) => {
+    const user = await this.userModel.findById(_id);
     if (!user) {
       throw new ApolloError('User not found')
     }
 
-    return user.set(updateUserInput).save();
+    return user.set(rest).save();
   }
 
   signIn = async (signInInput: SignInInput): Promise<SignInPayload>  => {
     const user = await this.userModel.findOne({ email: signInInput.email });
-    console.log(user);
+    console.log('signin in user',user);
     if(!user || (user && !this.validatePassword(user, signInInput.password))) {
       throw new ApolloError('User / password mismatch')
     }
@@ -57,5 +57,4 @@ export class UserService {
 
     return user;
   }
-
 }

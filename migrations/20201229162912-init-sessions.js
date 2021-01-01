@@ -4,7 +4,25 @@ module.exports = {
 
     try {
       await session.withTransaction(async () => {
-        await db.createCollection('sessions');
+        await db.createCollection('sessions',
+        {
+          validator: {
+            $jsonSchema: {
+              required: ["user", "sid", "lastLogin"],
+              properties: {
+                sid: {
+                  bsonType: "string",
+                },
+                user: {
+                  bsonType: "objectId",
+                },
+                lastLogin: {
+                  bsonType: "date"
+                },
+              }
+            }
+          }
+        });
       })
     } finally {
       await session.endSession();

@@ -34,12 +34,5 @@ export class User {
 }
 
 const UserSchema = SchemaFactory.createForClass(User);
-UserSchema.pre('save', async function (){
-  this.set({ updatedAt: new Date() });
-});
-
-UserSchema.pre('updateOne', async function (){
-  this.set({ updatedAt: new Date() });
-});
 
 export const UserModel = MongooseModule.forFeature([{ name: 'user', schema: UserSchema }]) 
