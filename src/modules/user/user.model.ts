@@ -1,6 +1,7 @@
 import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import PaginationHelper from 'src/utils/pagination.helper';
 
 export type UserDocument = User & Document;
 
@@ -50,3 +51,8 @@ const UserSchema = SchemaFactory.createForClass(User);
 export const UserModel = MongooseModule.forFeature([
   { name: 'user', schema: UserSchema },
 ]);
+
+@ObjectType('UserConnection')
+export class UserConnection extends PaginationHelper.createPaginatedSchema(
+  User,
+) {}

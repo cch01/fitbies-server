@@ -22,6 +22,22 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+type UserEdge {
+  cursor: String!
+  node: User!
+}
+
+type UserConnection {
+  edges: [UserEdge!]
+  nodes: [User!]
+  endCursor: String
+  startCursor: String
+  hasPreviousPage: Boolean
+  hasNextPage: Boolean
+  totalCount: Int
+  dataCountInPage: Int
+}
+
 type SignInPayload {
   token: String!
   user: User!
@@ -29,8 +45,19 @@ type SignInPayload {
 
 type Query {
   user(email: String, _id: ID): User
+  users(connectionArgs: ConnectionArgs): UserConnection
   me: User!
   healthCheck: Boolean!
+}
+
+input ConnectionArgs {
+  first: Int
+  after: String
+  last: Int
+  before: String
+  offset: Int
+  sortBy: String
+  sortOrder: String
 }
 
 type Mutation {

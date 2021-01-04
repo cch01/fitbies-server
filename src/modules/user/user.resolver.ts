@@ -13,7 +13,7 @@ import { CurrentUser } from 'src/decorators/user.decorator';
 import { AuthGuard } from 'src/decorators/auth.guard';
 import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
 import { SignInPayload } from './dto/user.payload';
-import { User, UserDocument } from './user.model';
+import { User, UserConnection, UserDocument } from './user.model';
 import { UserService } from './user.service';
 import {
   ApolloError,
@@ -22,6 +22,8 @@ import {
 } from 'apollo-server-express';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { ConnectionArgs } from '../common/dto/connection.args';
+import PaginationHelper from 'src/utils/pagination.helper';
 
 @Resolver((of) => User)
 export class UserResolver {
@@ -40,6 +42,18 @@ export class UserResolver {
     return await this.userService.findUser(currentUser, { _id, email });
   }
 
+  @Query((returns) => UserConnection, { nullable: true })
+  @UseGuards(AuthGuard)
+  async users(
+    @Args('connectionArgs', { type: () => ConnectionArgs, nullable: true })
+    connectionArgs: ConnectionArgs,
+  ): Promise<UserConnection> {
+    return await PaginationHelper.applyConnectionArgs(
+      connectionArgs,
+      this.userModel,
+    );
+  }
+
   @Query((returns) => User)
   @UseGuards(AuthGuard)
   async me(@CurrentUser() currentUser: User): Promise<User> {
@@ -47,7 +61,7 @@ export class UserResolver {
   }
 
   @Mutation((returns) => User, { nullable: true })
-  async signUp(@Args('signUpInput') signUpInput: SignUpInput) {
+  async signUp(@Args('signUpInput') signUpInput: SignUpInput): Promise<User> {
     if (signUpInput.type === 'ADMIN') {
       throw new ForbiddenError('Invalid input');
     }
