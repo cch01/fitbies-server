@@ -25,6 +25,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ConnectionArgs } from '../common/dto/connection.args';
 import PaginationHelper from 'src/utils/pagination.helper';
 import { sendEmail } from 'src/utils/send.email';
+import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 
 @Resolver((of) => User)
 export class UserResolver {
@@ -49,10 +50,7 @@ export class UserResolver {
     @Args('connectionArgs', { type: () => ConnectionArgs, nullable: true })
     connectionArgs: ConnectionArgs,
   ): Promise<UserConnection> {
-    return await PaginationHelper.applyConnectionArgs(
-      connectionArgs,
-      this.userModel,
-    );
+    return await applyConnectionArgs(connectionArgs, this.userModel);
   }
 
   @Query((returns) => User)

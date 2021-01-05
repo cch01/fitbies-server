@@ -8,6 +8,9 @@ type User {
   lastName: String
   email: String
   type: UserType
+  resetToken: String
+  activationToken: String
+  invitationToken: String
   createdAt: DateTime
   updatedAt: DateTime
 }

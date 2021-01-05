@@ -31,6 +31,12 @@ export class User {
   type?: UserType;
 
   @Field({ nullable: true })
+  resetToken?: string;
+
+  @Field({ nullable: true })
+  activationToken?: string;
+
+  @Field({ nullable: true })
   createdAt?: Date;
 
   @Field({ nullable: true })
