@@ -1,7 +1,8 @@
 import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import PaginationHelper from 'src/utils/pagination.helper';
+import { IsEmail } from 'class-validator';
+import { createPaginatedSchema } from 'src/utils/create.paginated.schema';
 
 export type UserDocument = User & Document;
 
@@ -19,6 +20,7 @@ export class User {
   @Field({ nullable: true })
   lastName?: string;
 
+  @IsEmail()
   @Prop({ required: true, unique: true })
   @Field({ nullable: true })
   email?: string;
@@ -59,6 +61,7 @@ export const UserModel = MongooseModule.forFeature([
 ]);
 
 @ObjectType('UserConnection')
-export class UserConnection extends PaginationHelper.createPaginatedSchema(
-  User,
-) {}
+export class UserConnection extends createPaginatedSchema(User) {}
+
+
+//TODO add user status

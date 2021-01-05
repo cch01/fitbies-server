@@ -7,6 +7,8 @@ import { join } from 'path';
 import { UserModule } from './modules/user/user.module';
 import { CommonModule } from './modules/common/common.module';
 import { SessionModule } from './modules/session/session.module';
+import { MeetingService } from './modules/meeting/meeting.service';
+import { MeetingModule } from './modules/meeting/meeting.module';
 
 console.log(process.env.DB_CONNECTION_URI);
 @Module({
@@ -23,6 +25,7 @@ console.log(process.env.DB_CONNECTION_URI);
     UserModule,
     CommonModule,
     SessionModule,
+    MeetingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

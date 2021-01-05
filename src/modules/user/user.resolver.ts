@@ -23,7 +23,6 @@ import {
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConnectionArgs } from '../common/dto/connection.args';
-import PaginationHelper from 'src/utils/pagination.helper';
 import { sendEmail } from 'src/utils/send.email';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 

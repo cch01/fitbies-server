@@ -6,80 +6,61 @@ import activationEmail from 'src/email.templates/activation';
 import resetPasswordEmail from 'src/email.templates/resetPw';
 import meetingInvitationEmail from 'src/email.templates/meeting.invatation';
 
+const tokenExpiresIn = '1d';
 export default class EmailHelper {
   static async sendActivationEmail(
-    user: UserDocument,
+    userEmail: string,
     subject: string,
+    activationToken: string,
   ): Promise<void> {
     try {
-      const activationToken = jwt.sign(
-        { user: user.email },
-        process.env.EMAIL_SECRET,
-        {
-          expiresIn: '1d',
-        },
-      );
+      const url = `${process.env.SERVER_URI}/activation/${activationToken}`;
 
-      const url = `localhost:4000/activation/${activationToken}`;
+      const html = activationEmail(userEmail, url);
 
-      const html = activationEmail(user.lastName, url);
-
-      await sendEmail(user.email, subject, html);
-
-      await user.set({ activationToken }).save();
+      await sendEmail(userEmail, subject, html);
     } catch (err) {
       console.log(err);
     }
   }
   static async sendResetPasswordEmail(
-    user: UserDocument,
+    userEmail: string,
+    userName: string,
     subject: string,
+    resetToken: string,
   ): Promise<void> {
     try {
-      const resetToken = jwt.sign(
-        { user: user.email },
-        process.env.EMAIL_SECRET,
-        {
-          expiresIn: '1d',
-        },
-      );
+      const url = `${process.env.SERVER_URI}/reset/${resetToken}`;
 
-      const url = `localhost:4000/reset/${resetToken}`;
+      const html = resetPasswordEmail(userName, url);
 
-      const html = resetPasswordEmail(user.lastName, url);
-
-      await sendEmail(user.email, subject, html);
-
-      await user.set({ resetToken }).save();
+      await sendEmail(userEmail, subject, html);
     } catch (err) {
       console.log(err);
     }
   }
 
   static async sendMeetingInvitationEmail(
-    initiator: UserDocument,
-    targetUser: UserDocument,
+    initiatorName: string,
+    targetEmail: string,
     subject: string,
-    passcode?: string,
+    invitationToken: string,
+    passCode?: string,
   ): Promise<void> {
     try {
-      const invitationToken = jwt.sign(
-        { user: targetUser.email },
-        process.env.EMAIL_SECRET,
-        {
-          expiresIn: '1d',
-        },
-      );
+      const url = `${process.env.SERVER_URI}/reset/${invitationToken}`;
 
-      const url = `localhost:4000/reset/${invitationToken}`;
+      const html = meetingInvitationEmail(initiatorName, url, passCode);
 
-      const html = meetingInvitationEmail(initiator.lastName, url, passcode);
-
-      await sendEmail(targetUser.email, subject, html);
-
-      await initiator.set({ invitationToken }).save();
+      await sendEmail(targetEmail, subject, html);
     } catch (err) {
       console.log(err);
     }
+  }
+
+  static generateEmailToken(plainText: string) {
+    return jwt.sign(plainText, process.env.EMAIL_SECRET, {
+      expiresIn: tokenExpiresIn,
+    });
   }
 }

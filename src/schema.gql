@@ -10,7 +10,6 @@ type User {
   type: UserType
   resetToken: String
   activationToken: String
-  invitationToken: String
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -46,6 +45,21 @@ type SignInPayload {
   user: User!
 }
 
+type Participant {
+  _id: ID!
+  approvedAt: DateTime
+}
+
+type Meeting {
+  _id: ID!
+  initiator: ID
+  participants: [Participant!]
+  passCode: String
+  invitationToken: String
+  endedAt: DateTime
+  needApproval: Boolean
+}
+
 type Query {
   user(email: String, _id: ID): User
   users(connectionArgs: ConnectionArgs): UserConnection
@@ -67,6 +81,8 @@ type Mutation {
   signUp(signUpInput: SignUpInput!): User
   signIn(signInInput: SignInInput!): SignInPayload
   updateUser(updateUserInput: UpdateUserInput!): User
+  createMeeting(createMeetingInput: CreateMeetingInput!): Meeting
+  joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
 }
 
 input SignUpInput {
@@ -87,4 +103,16 @@ input UpdateUserInput {
   firstName: String
   lastName: String
   email: String
+}
+
+input CreateMeetingInput {
+  initiatorId: ID!
+  passCode: String
+  needApproval: Boolean
+}
+
+input JoinMeetingInput {
+  meetingId: ID!
+  joinerId: ID!
+  passCode: String
 }

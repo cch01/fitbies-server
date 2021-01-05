@@ -1,6 +1,7 @@
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { Document, SchemaTypes } from 'mongoose';
+import { IsDate } from 'class-validator';
 
 export type SessionDocument = Session & Document;
 
@@ -9,6 +10,7 @@ export class Session {
   @Prop({ default: () => uuidv4() })
   sid: string;
 
+  @IsDate()
   @Prop({ default: () => new Date() })
   lastLogin: Date;
 

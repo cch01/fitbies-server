@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Inject, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,8 +16,9 @@ import { AuthenticationError } from 'apollo-server-express';
 export class AuthGuard implements CanActivate {
   constructor(
     @InjectModel('user') private readonly userModel: Model<UserDocument>,
-    @InjectModel('session') private readonly sessionModel: Model<SessionDocument>,
-  ) { }
+    @InjectModel('session')
+    private readonly sessionModel: Model<SessionDocument>,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context).getContext();
@@ -21,14 +27,17 @@ export class AuthGuard implements CanActivate {
 
     const token = auth.replace(/^Bearer\s/, '');
 
-    const session = await (await this.sessionModel.findOne({ sid: token, lastLogin: { $gte: moment().subtract(30, 'days').toDate() } }))
-    
+    const session = await await this.sessionModel.findOne({
+      sid: token,
+      lastLogin: { $gte: moment().subtract(30, 'days').toDate() },
+    });
+
     if (!session) {
-      throw new AuthenticationError('Token expired')
+      throw new AuthenticationError('Token expired');
     }
 
     await session.set('lastLogin', new Date()).save();
-    
+
     ctx.user = (await session.populate('user').execPopulate()).user;
     return true;
   }

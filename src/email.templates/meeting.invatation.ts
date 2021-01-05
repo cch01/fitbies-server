@@ -1,7 +1,7 @@
 export default function meetingInvitationEmail(
   initiatorName: string,
   url: string,
-  passcode?: string,
+  passCode?: string,
 ): string {
   return `
 <!DOCTYPE html>
@@ -24,7 +24,7 @@ export default function meetingInvitationEmail(
         </td> 
       </tr>
       ${
-        passcode ??
+        passCode ??
         `<tr>
         <td>
           <h4>Here is the pass code for joining the meeting.</h4>
@@ -32,7 +32,7 @@ export default function meetingInvitationEmail(
       </tr>
       <tr>
         <td>
-          <h2>${passcode}</h2>
+          <h2>${passCode}</h2>
         </td> 
       </tr>`
       }
