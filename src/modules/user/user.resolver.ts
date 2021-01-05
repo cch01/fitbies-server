@@ -24,6 +24,7 @@ import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConnectionArgs } from '../common/dto/connection.args';
 import PaginationHelper from 'src/utils/pagination.helper';
+import { sendEmail } from 'src/utils/send.email';
 
 @Resolver((of) => User)
 export class UserResolver {
@@ -57,6 +58,8 @@ export class UserResolver {
   @Query((returns) => User)
   @UseGuards(AuthGuard)
   async me(@CurrentUser() currentUser: User): Promise<User> {
+    sendEmail();
+
     return currentUser;
   }
 

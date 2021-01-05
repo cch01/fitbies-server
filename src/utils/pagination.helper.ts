@@ -69,8 +69,6 @@ export default class PaginationHelper {
       after,
     } = connectionArgs;
 
-    checkArgs({ after, before, first, last });
-
     const totalCount = await model.find(opts).count();
 
     const crawlAll = (first || last) <= 0;
@@ -81,9 +79,7 @@ export default class PaginationHelper {
     const query = {
       ...(queryCursor && {
         [`${sortBy}`]: {
-          [after ? '$lt' : '$gt']: PaginationHelper.cursorToCreateAt(
-            queryCursor,
-          ),
+          [after ? '$lt' : '$gt']: PaginationHelper.decodeCursor(queryCursor),
         },
       }),
       ...opts.query,
@@ -108,11 +104,11 @@ export default class PaginationHelper {
     };
   }
 
-  static createdAtToCursor(createdAt: string): ConnectionCursor {
+  static encodeToCursor(createdAt: string): ConnectionCursor {
     return Buffer.from(new Date(createdAt).toISOString()).toString('base64');
   }
 
-  static cursorToCreateAt(cursor: ConnectionCursor): string {
+  static decodeCursor(cursor: ConnectionCursor): string {
     const createdAt = Buffer.from(cursor, 'base64').toString('ascii');
     if (!moment(createdAt).isValid()) {
       throw new ApolloError('Invalid cursor');
@@ -155,6 +151,8 @@ function getPaginatedResponse(
   let hasNextPage = false;
   let hasPreviousPage = false;
 
+  checkArgs({ after, before, first, last });
+
   if (first) {
     hasNextPage = fetchedResult.length > first;
     if (after) {
@@ -176,7 +174,7 @@ function getPaginatedResponse(
 
   const edges = !!nodes
     ? nodes.map((node) => ({
-        cursor: PaginationHelper.createdAtToCursor(_.get(node, 'createdAt')),
+        cursor: PaginationHelper.encodeToCursor(_.get(node, 'createdAt')),
         node,
       }))
     : [];
@@ -185,13 +183,13 @@ function getPaginatedResponse(
 
   const endCursor =
     nodes.length &&
-    PaginationHelper.createdAtToCursor(
+    PaginationHelper.encodeToCursor(
       _.get(nodes[nodes.length - 1], 'createdAt'),
     );
 
   const startCursor =
     nodes.length &&
-    PaginationHelper.createdAtToCursor(_.get(nodes[0], 'createdAt'));
+    PaginationHelper.encodeToCursor(_.get(nodes[0], 'createdAt'));
 
   return {
     hasNextPage,
