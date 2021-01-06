@@ -67,19 +67,20 @@ export class UserService {
       throw new UserInputError('id or email must be provided.');
     }
 
-    const user =
-      !!currentUser &&
-      (await this.userModel.findOne({
-        ...(_id && { _id }),
-        ...(email && { email }),
-      }));
+    if (!currentUser) {
+      throw new ForbiddenError('Access denied.');
+    }
+    const user = await this.userModel.findOne({
+      ...(_id && { _id }),
+      ...(email && { email }),
+    });
 
     if (!user) {
       throw new ApolloError('user not found');
     }
 
     if (!(await this.isPermitToReadUser(currentUser, user._id))) {
-      throw new ForbiddenError('Permission denied');
+      throw new ForbiddenError('Access denied');
     }
     return user;
   }
@@ -94,7 +95,10 @@ export class UserService {
     return true;
   }
 
-  async isPermitToWrite(user: User, targetUserId: string): Promise<boolean> {
+  async isPermitToWriteUser(
+    user: User,
+    targetUserId: string,
+  ): Promise<boolean> {
     switch (user.type) {
       case 'ADMIN':
         return true;

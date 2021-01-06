@@ -10,7 +10,6 @@ import { SessionModule } from './modules/session/session.module';
 import { MeetingService } from './modules/meeting/meeting.service';
 import { MeetingModule } from './modules/meeting/meeting.module';
 
-console.log(process.env.DB_CONNECTION_URI);
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.DB_CONNECTION_URI, {

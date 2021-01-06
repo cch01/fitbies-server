@@ -39,6 +39,7 @@ export class AuthGuard implements CanActivate {
     await session.set('lastLogin', new Date()).save();
 
     ctx.user = (await session.populate('user').execPopulate()).user;
+    console.log('LoggedIn: ', ctx.user);
     return true;
   }
 }

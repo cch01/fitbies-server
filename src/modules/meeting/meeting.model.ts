@@ -2,6 +2,8 @@ import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Schema, Prop, SchemaFactory, MongooseModule } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { IsDate } from 'class-validator';
+import { User } from '../user/user.model';
+import { createPaginatedSchema } from 'src/utils/create.paginated.schema';
 
 export type MeetingDocument = Meeting & mongoose.Document;
 
@@ -15,6 +17,14 @@ export class Participant {
   @Field({ nullable: true })
   @Prop()
   approvedAt?: Date;
+
+  @Field({ nullable: true })
+  @Prop()
+  leftAt?: Date;
+
+  @Field({ nullable: true })
+  @Prop()
+  isLeft?: boolean;
 }
 export const ParticipantSchema = SchemaFactory.createForClass(Participant);
 
@@ -24,13 +34,14 @@ export class Meeting {
   @Field((type) => ID)
   _id: string;
 
-  @Field((type) => ID, { nullable: true })
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true })
+  @Field((type) => User, { nullable: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true })
   initiator: string;
 
   @Field((type) => [Participant], { nullable: true })
   @Prop({
-    type: ParticipantSchema,
+    type: [ParticipantSchema],
+    default: [],
   })
   participants?: Participant[];
 
@@ -40,7 +51,7 @@ export class Meeting {
 
   @Field({ nullable: true })
   @Prop()
-  invitationToken?: string;
+  meetingInvitationToken?: string;
 
   @IsDate()
   @Field((type) => Date, { nullable: true })
@@ -57,3 +68,6 @@ const MeetingSchema = SchemaFactory.createForClass(Meeting);
 export const MeetingModel = MongooseModule.forFeature([
   { name: 'meeting', schema: MeetingSchema },
 ]);
+
+@ObjectType('MeetingConnection')
+export class MeetingConnection extends createPaginatedSchema(Meeting) {}

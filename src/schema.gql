@@ -48,16 +48,34 @@ type SignInPayload {
 type Participant {
   _id: ID!
   approvedAt: DateTime
+  leftAt: DateTime
+  isLeft: Boolean
 }
 
 type Meeting {
   _id: ID!
-  initiator: ID
+  initiator: User
   participants: [Participant!]
   passCode: String
-  invitationToken: String
+  meetingInvitationToken: String
   endedAt: DateTime
   needApproval: Boolean
+}
+
+type MeetingEdge {
+  cursor: String!
+  node: Meeting!
+}
+
+type MeetingConnection {
+  edges: [MeetingEdge!]
+  nodes: [Meeting!]
+  endCursor: String
+  startCursor: String
+  hasPreviousPage: Boolean
+  hasNextPage: Boolean
+  totalCount: Int
+  dataCountInPage: Int
 }
 
 type Query {
@@ -65,6 +83,8 @@ type Query {
   users(connectionArgs: ConnectionArgs): UserConnection
   me: User!
   healthCheck: Boolean!
+  meeting(meetingId: String!): Meeting
+  meetings(userId: String, connectionArgs: ConnectionArgs!): MeetingConnection!
 }
 
 input ConnectionArgs {
@@ -74,7 +94,12 @@ input ConnectionArgs {
   before: String
   offset: Int
   sortBy: String
-  sortOrder: String
+  sortOrder: SortOrder
+}
+
+enum SortOrder {
+  ASC
+  DESC
 }
 
 type Mutation {
@@ -83,6 +108,8 @@ type Mutation {
   updateUser(updateUserInput: UpdateUserInput!): User
   createMeeting(createMeetingInput: CreateMeetingInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
+  endMeeting(meetingId: String!): Meeting
+  leaveMeeting(meetingId: String!): Meeting
 }
 
 input SignUpInput {

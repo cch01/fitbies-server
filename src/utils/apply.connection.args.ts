@@ -1,14 +1,23 @@
 import { Model } from 'mongoose';
-import { ConnectionArgs } from 'src/modules/common/dto/connection.args';
+import {
+  ConnectionArgs,
+  SortDirection,
+} from 'src/modules/common/dto/connection.args';
 import { getPaginatedResponse } from './get.paginated.response';
 import PaginationHelper from './pagination.helper';
+
+class QueryOptions {
+  query?: any;
+  projection?: any;
+  options?: any;
+}
 
 export async function applyConnectionArgs(
   connectionArgs: ConnectionArgs = {},
   model: Model<any>,
-  opts: any = {},
+  opts: QueryOptions = {},
   defaultSortBy = 'createdAt',
-  defaultDirection = -1,
+  defaultDirection = SortDirection.DESC,
 ): Promise<any> {
   const {
     first,
@@ -20,8 +29,9 @@ export async function applyConnectionArgs(
     after,
   } = connectionArgs;
 
-  const totalCount = await model.find(opts).count();
-
+  const totalCount = await model
+    .find({ ...opts.query }, { ...opts.projection }, { ...opts.options })
+    .count();
   const crawlAll = (first || last) <= 0;
 
   const limit = first || last;
@@ -47,7 +57,15 @@ export async function applyConnectionArgs(
     },
   );
 
-  const pageInfo = getPaginatedResponse(first, after, last, before, results);
+  const pageInfo = getPaginatedResponse(
+    first,
+    after,
+    last,
+    before,
+    sortBy,
+    sortOrder,
+    results,
+  );
 
   return {
     totalCount,

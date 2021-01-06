@@ -1,19 +1,22 @@
 import { ConnectionArgs } from 'src/modules/common/dto/connection.args';
-import { ApolloError, UserInputError } from 'apollo-server-express';
+import { UserInputError } from 'apollo-server-express';
 import * as moment from 'moment';
 import * as _ from 'lodash';
 
 export default class PaginationHelper {
-  static encodeCursor(input: string): string {
+  static encodeToCursor(input: string): string {
+    if (!moment(input, [moment.ISO_8601], true).isValid()) {
+      return Buffer.from(input).toString('base64');
+    }
     return Buffer.from(new Date(input).toISOString()).toString('base64');
   }
 
   static decodeCursor(cursor: string): string {
-    const createdAt = Buffer.from(cursor, 'base64').toString('ascii');
-    if (!moment(createdAt).isValid()) {
-      throw new ApolloError('Invalid cursor');
+    const result = Buffer.from(cursor, 'base64').toString('ascii');
+    if (!moment(cursor, [moment.ISO_8601], true).isValid()) {
+      return result;
     }
-    return new Date(createdAt).toISOString();
+    return new Date(cursor).toISOString();
   }
 
   static checkConnectionArgs({

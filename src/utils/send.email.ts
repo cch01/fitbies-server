@@ -1,6 +1,5 @@
 import * as nodemailer from 'nodemailer';
 
-console.log(process.env.EMAILER, process.env.EMAILER_PW);
 const transporter =
   process.env.ENVIRONMENT === 'DEV'
     ? nodemailer.createTransport({

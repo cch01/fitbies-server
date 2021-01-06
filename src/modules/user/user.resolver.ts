@@ -49,7 +49,11 @@ export class UserResolver {
   async users(
     @Args('connectionArgs', { type: () => ConnectionArgs, nullable: true })
     connectionArgs: ConnectionArgs,
+    @CurrentUser() currentUser: User,
   ): Promise<UserConnection> {
+    if (currentUser.type != 'ADMIN') {
+      throw new ForbiddenError('Access denied');
+    }
     return await applyConnectionArgs(connectionArgs, this.userModel);
   }
 
@@ -57,7 +61,6 @@ export class UserResolver {
   @UseGuards(AuthGuard)
   async me(@CurrentUser() currentUser: User): Promise<User> {
     sendEmail();
-
     return currentUser;
   }
 
@@ -78,5 +81,40 @@ export class UserResolver {
   @UseGuards(AuthGuard)
   async updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
     return await this.userService.updateUser(updateUserInput);
+  }
+
+  @ResolveField((returns) => String)
+  async type(@Parent() user: User, @CurrentUser() currentUser: User) {
+    const isPermitToReadUser = await this.userService.isPermitToReadUser(
+      currentUser,
+      user._id,
+    );
+    if (!isPermitToReadUser) {
+      throw new ForbiddenError('Access denied');
+    }
+    return user.type;
+  }
+
+  @ResolveField((returns) => String)
+  async resetToken(@Parent() user: User, @CurrentUser() currentUser: User) {
+    const isPermitToReadUser = await this.userService.isPermitToReadUser(
+      currentUser,
+      user._id,
+    );
+    if (!isPermitToReadUser) {
+      throw new ForbiddenError('Access denied');
+    }
+    return user.resetToken;
+  }
+
+  @ResolveField((returns) => String)
+  async activationToken(
+    @Parent() user: User,
+    @CurrentUser() currentUser: User,
+  ) {
+    if (!(await this.userService.isPermitToReadUser(currentUser, user._id))) {
+      throw new ForbiddenError('Access denied');
+    }
+    return user.activationToken;
   }
 }

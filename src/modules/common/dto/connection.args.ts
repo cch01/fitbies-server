@@ -1,4 +1,4 @@
-import { Field, InputType, Int } from '@nestjs/graphql';
+import { Field, InputType, Int, registerEnumType } from '@nestjs/graphql';
 
 type ConnectionCursor = string;
 type ConnectionOffsetInt = number;
@@ -24,6 +24,14 @@ export class ConnectionArgs {
   @Field(() => String, { nullable: true })
   sortBy?: string;
 
-  @Field(() => String, { nullable: true })
-  sortOrder?: string;
+  @Field(() => SortDirection, { nullable: true })
+  sortOrder?: SortDirection;
 }
+
+export enum SortDirection {
+  ASC = 1,
+  DESC = -1,
+}
+registerEnumType(SortDirection, {
+  name: 'SortOrder',
+});

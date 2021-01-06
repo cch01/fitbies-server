@@ -1,11 +1,14 @@
 import PaginationHelper from './pagination.helper';
 import * as _ from 'lodash';
+import { SortDirection } from 'src/modules/common/dto/connection.args';
 
 export function getPaginatedResponse(
   first: number,
   after: string,
   last: number,
   before: string,
+  sortBy: string,
+  sortOrder: SortDirection,
   fetchedResult: any[],
 ): Record<string, unknown> {
   let nodes;
@@ -14,13 +17,11 @@ export function getPaginatedResponse(
 
   PaginationHelper.checkConnectionArgs({ after, before, first, last });
 
-  if (first) {
-    hasNextPage = fetchedResult.length > first;
-    if (after) {
-      hasPreviousPage = true;
-    }
-    nodes = hasNextPage ? fetchedResult.slice(0, -1) : fetchedResult;
+  hasNextPage = first && fetchedResult.length > first;
+  if (after) {
+    hasPreviousPage = true;
   }
+  nodes = hasNextPage ? fetchedResult.slice(0, -1) : fetchedResult;
 
   if (last) {
     hasPreviousPage = fetchedResult.length > last;
@@ -35,7 +36,9 @@ export function getPaginatedResponse(
 
   const edges = !!nodes
     ? nodes.map((node) => ({
-        cursor: PaginationHelper.encodeCursor(_.get(node, 'createdAt')),
+        cursor: PaginationHelper.encodeToCursor(
+          _.get(node, sortBy ?? 'createdAt'),
+        ),
         node,
       }))
     : [];
@@ -43,11 +46,14 @@ export function getPaginatedResponse(
   const dataCountInPage = edges.length ?? 0;
 
   const endCursor =
-    nodes.length &&
-    PaginationHelper.encodeCursor(_.get(nodes[nodes.length - 1], 'createdAt'));
+    nodes?.length &&
+    PaginationHelper.encodeToCursor(
+      _.get(nodes[nodes.length - 1], sortBy ?? 'createdAt'),
+    );
 
   const startCursor =
-    nodes.length && PaginationHelper.encodeCursor(_.get(nodes[0], 'createdAt'));
+    nodes?.length &&
+    PaginationHelper.encodeToCursor(_.get(nodes[0], sortBy ?? 'createdAt'));
 
   return {
     hasNextPage,
