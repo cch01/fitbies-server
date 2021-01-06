@@ -26,6 +26,7 @@ import { ConnectionArgs } from '../common/dto/connection.args';
 import { sendEmail } from 'src/utils/send.email';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 
+//TODO forgot pw
 @Resolver((of) => User)
 export class UserResolver {
   constructor(

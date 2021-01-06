@@ -1,13 +1,22 @@
 import * as nodemailer from 'nodemailer';
 
 console.log(process.env.EMAILER, process.env.EMAILER_PW);
-const transporter = nodemailer.createTransport({
-  service: 'Gmail',
-  auth: {
-    user: process.env.EMAILER, // generated ethereal user
-    pass: process.env.EMAILER_PW, // generated ethereal password
-  },
-});
+const transporter =
+  process.env.ENVIRONMENT === 'DEV'
+    ? nodemailer.createTransport({
+        host: process.env.DEV_EMAIL_HOST,
+        auth: {
+          user: process.env.DEV_EMAIL_USER, // generated ethereal user
+          pass: process.env.DEV_EMAIL_PASSWORD, // generated ethereal password
+        },
+      })
+    : nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+          user: process.env.EMAILER, // generated ethereal user
+          pass: process.env.EMAILER_PASSWORD, // generated ethereal password
+        },
+      });
 
 export async function sendEmail(to?: string, subject?: string, html?: string) {
   return await transporter.sendMail(
