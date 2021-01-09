@@ -7,7 +7,6 @@ import { join } from 'path';
 import { UserModule } from './modules/user/user.module';
 import { CommonModule } from './modules/common/common.module';
 import { SessionModule } from './modules/session/session.module';
-import { MeetingService } from './modules/meeting/meeting.service';
 import { MeetingModule } from './modules/meeting/meeting.module';
 
 @Module({
@@ -17,6 +16,7 @@ import { MeetingModule } from './modules/meeting/meeting.module';
     }),
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      installSubscriptionHandlers: true,
       context: async ({ req, res }) => ({
         req,
         res,

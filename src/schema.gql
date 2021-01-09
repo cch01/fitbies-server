@@ -114,6 +114,7 @@ type Mutation {
   signUp(signUpInput: SignUpInput!): User
   signIn(signInInput: SignInInput!): SignInPayload
   updateUser(updateUserInput: UpdateUserInput!): User
+  checkUser(id: String!): String!
   createMeeting(createMeetingInput: CreateMeetingInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
   endMeeting(meetingId: String!): Meeting
@@ -150,4 +151,8 @@ input JoinMeetingInput {
   meetingId: ID!
   joinerId: ID!
   passCode: String
+}
+
+type Subscription {
+  testForUser: String
 }

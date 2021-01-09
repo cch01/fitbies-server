@@ -1,7 +1,11 @@
-import { ExpressPeerServer } from 'peer';
+import { PeerServer } from 'peer';
 
-export default function (server, options = {}): any {
-  const peerServer = ExpressPeerServer(server, options);
+export default function (port: number): any {
+  const peerServer = PeerServer({
+    port,
+    path: '/rooms',
+    key: process.env.PEER_SERVER_KEY,
+  });
 
   peerServer.on('connection', (client) => {
     console.log(`${client} has been connected.`);
@@ -10,6 +14,4 @@ export default function (server, options = {}): any {
   peerServer.on('disconnect', (client) => {
     console.log(`${client} has been disconnected.`);
   });
-
-  return peerServer;
 }

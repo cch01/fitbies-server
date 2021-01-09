@@ -17,6 +17,7 @@ export class SessionHandler implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context).getContext();
+    if(!ctx.req) return true;
     const auth = ctx.req.cookies['access-token'];
     if (!auth) {
       const guestToken = await this.sessionService.createSession();

@@ -1,4 +1,4 @@
-import { UseGuards } from '@nestjs/common';
+import { Inject, UseGuards } from '@nestjs/common';
 import {
   Args,
   Mutation,
@@ -9,6 +9,7 @@ import {
   Parent,
   Root,
   Context,
+  Subscription,
 } from '@nestjs/graphql';
 import { CurrentUser } from 'src/decorators/user.decorator';
 import { RegisteredUserGuard } from 'src/guards/registered.user.guard';
@@ -28,6 +29,7 @@ import { sendEmail } from 'src/utils/send.email';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { SessionHandler } from 'src/guards/session.handler';
 import { SessionService } from '../session/session.service';
+import { PubSubEngine } from 'graphql-subscriptions';
 
 //TODO forgot pw
 @Resolver((of) => User)
@@ -37,6 +39,7 @@ export class UserResolver {
     private readonly userService: UserService,
     private readonly sessionService: SessionService,
     @InjectModel('user') private readonly userModel: Model<UserDocument>,
+    @Inject('PUB_SUB') private readonly pubSub: PubSubEngine,
   ) {}
 
   @Query((returns) => User, { nullable: true })
@@ -106,5 +109,16 @@ export class UserResolver {
       throw new ForbiddenError('Access denied');
     }
     return user.type;
+  }
+
+  @Mutation((returns) => String)
+  async checkUser(@Args('id') id: string) {
+    this.pubSub.publish('testForUser', { testForUser: id });
+    return id;
+  }
+
+  @Subscription((returns) => String, { name: 'testForUser', nullable: true })
+  async testForUser() {
+    return this.pubSub.asyncIterator('testForUser');
   }
 }
