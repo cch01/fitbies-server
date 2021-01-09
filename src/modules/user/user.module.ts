@@ -3,18 +3,11 @@ import { SessionModule } from 'src/modules/session/session.module';
 import { UserModel } from './user.model';
 import { UserResolver } from './user.resolver';
 import { UserService } from './user.service';
-import { PubSub } from 'graphql-subscriptions';
+import { PubSubModule } from 'src/pub.sub/pub.sub.module';
 
 @Module({
-  imports: [UserModel, SessionModule],
-  providers: [
-    UserService,
-    UserResolver,
-    {
-      provide: 'PUB_SUB',
-      useValue: new PubSub(),
-    },
-  ],
+  imports: [UserModel, SessionModule, PubSubModule],
+  providers: [UserService, UserResolver],
   exports: [UserModel, UserService],
 })
 export class UserModule {}

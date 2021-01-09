@@ -8,6 +8,7 @@ import { UserModule } from './modules/user/user.module';
 import { CommonModule } from './modules/common/common.module';
 import { SessionModule } from './modules/session/session.module';
 import { MeetingModule } from './modules/meeting/meeting.module';
+import { PubSubModule } from './pub.sub/pub.sub.module';
 
 @Module({
   imports: [
@@ -17,6 +18,11 @@ import { MeetingModule } from './modules/meeting/meeting.module';
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       installSubscriptionHandlers: true,
+      subscriptions: {
+        onConnect: (param, ws) => {
+          //TODO ws auth!
+        },
+      },
       context: async ({ req, res }) => ({
         req,
         res,
@@ -26,6 +32,7 @@ import { MeetingModule } from './modules/meeting/meeting.module';
     CommonModule,
     SessionModule,
     MeetingModule,
+    PubSubModule,
   ],
   controllers: [AppController],
   providers: [AppService],
