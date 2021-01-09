@@ -4,12 +4,14 @@
 
 type User {
   _id: ID!
+  nickname: String
   firstName: String
   lastName: String
   email: String
   type: UserType
-  resetToken: String
-  activationToken: String
+  status: UserStatus
+  isActivated: Boolean
+  registeredAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -17,6 +19,12 @@ type User {
 enum UserType {
   CLIENT
   ADMIN
+}
+
+enum UserStatus {
+  ONLINE
+  IN_A_MEETING
+  OFF_LINE
 }
 
 """
@@ -84,7 +92,7 @@ type Query {
   me: User!
   healthCheck: Boolean!
   meeting(meetingId: String!): Meeting
-  meetings(userId: String, connectionArgs: ConnectionArgs!): MeetingConnection!
+  meetings(joinerId: String, initiatorId: String, connectionArgs: ConnectionArgs!): MeetingConnection!
 }
 
 input ConnectionArgs {

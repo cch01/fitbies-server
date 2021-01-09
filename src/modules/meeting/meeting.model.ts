@@ -3,7 +3,7 @@ import { Schema, Prop, SchemaFactory, MongooseModule } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { IsDate } from 'class-validator';
 import { User } from '../user/user.model';
-import { createPaginatedSchema } from 'src/utils/create.paginated.schema';
+import { Paginated } from 'src/utils/create.paginated.schema';
 
 export type MeetingDocument = Meeting & mongoose.Document;
 
@@ -70,4 +70,4 @@ export const MeetingModel = MongooseModule.forFeature([
 ]);
 
 @ObjectType('MeetingConnection')
-export class MeetingConnection extends createPaginatedSchema(Meeting) {}
+export class MeetingConnection extends Paginated(Meeting) {}

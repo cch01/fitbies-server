@@ -25,6 +25,9 @@ module.exports = {
                 password: {
                   bsonType: 'string',
                 },
+                isActivated: {
+                  bsonType: 'bool',
+                },
               },
             },
           },

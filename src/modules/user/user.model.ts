@@ -2,9 +2,19 @@ import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { IsEmail } from 'class-validator';
-import { createPaginatedSchema } from 'src/utils/create.paginated.schema';
+import { Paginated } from 'src/utils/create.paginated.schema';
 
 export type UserDocument = User & Document;
+
+enum UserStatus {
+  ONLINE = 'ONLINE',
+  IN_A_MEETING = 'IN_A_MEETING',
+  OFF_LINE = 'OFF_LINE',
+}
+
+registerEnumType(UserStatus, {
+  name: 'UserStatus',
+});
 
 @Schema({ collection: 'users', timestamps: true })
 @ObjectType()
@@ -14,29 +24,45 @@ export class User {
 
   @Prop({ required: true })
   @Field({ nullable: true })
+  nickname?: string;
+
+  @Prop({})
+  @Field({ nullable: true })
   firstName?: string;
 
-  @Prop({ required: true })
+  @Prop({})
   @Field({ nullable: true })
   lastName?: string;
 
   @IsEmail()
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true })
   @Field({ nullable: true })
   email?: string;
 
-  @Prop({ required: true })
+  @Prop({})
   password?: string;
 
   @Prop({ required: true })
   @Field((type) => UserType, { nullable: true })
   type?: UserType;
 
-  @Field({ nullable: true })
+  @Prop({ required: false })
+  @Field((type) => UserStatus, { nullable: true })
+  status: UserStatus;
+
+  @Prop()
   resetToken?: string;
 
-  @Field({ nullable: true })
+  @Prop()
   activationToken?: string;
+
+  @Field({ nullable: true })
+  @Prop()
+  isActivated?: boolean;
+
+  @Field((type) => Date, { nullable: true })
+  @Prop()
+  registeredAt?: Date;
 
   @Field({ nullable: true })
   createdAt?: Date;
@@ -61,7 +87,4 @@ export const UserModel = MongooseModule.forFeature([
 ]);
 
 @ObjectType('UserConnection')
-export class UserConnection extends createPaginatedSchema(User) {}
-
-
-//TODO add user status
+export class UserConnection extends Paginated(User) {}

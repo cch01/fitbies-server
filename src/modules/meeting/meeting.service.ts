@@ -23,9 +23,13 @@ export class MeetingService {
       initiator,
       passCode,
       needApproval,
+      participants: [{ _id: initiator, approvedAt: new Date() }],
     });
 
-    return (await newMeeting.save()).populate('initiator').execPopulate();
+    const result = await (await newMeeting.save())
+      .populate('initiator')
+      .execPopulate();
+    return result;
   }
 
   async joinMeeting({
@@ -52,6 +56,7 @@ export class MeetingService {
     let updatedMeeting;
     const joinedRecord = meeting.participants.find((_p) => _p._id == joinerId);
 
+    //TODO refactor needed
     if (!joinedRecord) {
       const newRecord = { _id: joinerId, approvedAt: new Date() };
       meeting.participants.push(newRecord);

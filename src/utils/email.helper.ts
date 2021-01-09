@@ -1,4 +1,3 @@
-import { UserDocument } from 'src/modules/user/user.model';
 import * as jwt from 'jsonwebtoken';
 import * as _ from 'lodash';
 import { sendEmail } from './send.email';
@@ -59,7 +58,7 @@ export default class EmailHelper {
   }
 
   static generateEmailToken(plainText: string) {
-    return jwt.sign(plainText, process.env.EMAIL_SECRET, {
+    return jwt.sign(plainText, process.env.EMAIL_TOKEN_SECRET, {
       expiresIn: tokenExpiresIn,
     });
   }

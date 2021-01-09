@@ -12,7 +12,7 @@ export class Session {
 
   @IsDate()
   @Prop({ default: () => new Date() })
-  lastLogin: Date;
+  lastAccess: Date;
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'user' })
   user: string;

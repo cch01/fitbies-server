@@ -17,9 +17,10 @@ import { MeetingModule } from './modules/meeting/meeting.module';
     }),
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      context: async ({ req }) => {
-        req;
-      },
+      context: async ({ req, res }) => ({
+        req,
+        res,
+      }),
     }),
     UserModule,
     CommonModule,

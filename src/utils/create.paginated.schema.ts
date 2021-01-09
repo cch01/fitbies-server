@@ -7,7 +7,7 @@ export type ConnectionLimitInt = number;
 export type ConnectionOffsetInt = number;
 export type ConnectionInt = number;
 
-export function createPaginatedSchema<T>(classRef: Type<T>): any {
+export function Paginated<T>(classRef: Type<T>): any {
   @ObjectType(`${classRef.name}Edge`)
   abstract class EdgeType {
     @Field((type) => String)

@@ -1,4 +1,4 @@
-import { UseGuards } from '@nestjs/common';
+import { ExecutionContext, UseGuards } from '@nestjs/common';
 import {
   Args,
   Mutation,
@@ -8,9 +8,10 @@ import {
   ResolveField,
   Parent,
   Root,
+  Context,
 } from '@nestjs/graphql';
 import { CurrentUser } from 'src/decorators/user.decorator';
-import { AuthGuard } from 'src/decorators/auth.guard';
+import { RegisteredUserGuard } from 'src/guards/registered.user.guard';
 import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
 import { SignInPayload } from './dto/user.payload';
 import { User, UserConnection, UserDocument } from './user.model';
@@ -25,17 +26,21 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ConnectionArgs } from '../common/dto/connection.args';
 import { sendEmail } from 'src/utils/send.email';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
+import { SessionHandler } from 'src/guards/session.handler';
+import { SessionService } from '../session/session.service';
 
 //TODO forgot pw
 @Resolver((of) => User)
+@UseGuards(SessionHandler)
 export class UserResolver {
   constructor(
     private readonly userService: UserService,
+    private readonly sessionService: SessionService,
     @InjectModel('user') private readonly userModel: Model<UserDocument>,
   ) {}
 
   @Query((returns) => User, { nullable: true })
-  @UseGuards(AuthGuard)
+  @UseGuards(RegisteredUserGuard)
   async user(
     @Args('_id', { type: () => ID, nullable: true }) _id: string,
     @Args('email', { type: () => String, nullable: true }) email: string,
@@ -45,7 +50,7 @@ export class UserResolver {
   }
 
   @Query((returns) => UserConnection, { nullable: true })
-  @UseGuards(AuthGuard)
+  @UseGuards(RegisteredUserGuard)
   async users(
     @Args('connectionArgs', { type: () => ConnectionArgs, nullable: true })
     connectionArgs: ConnectionArgs,
@@ -58,7 +63,7 @@ export class UserResolver {
   }
 
   @Query((returns) => User)
-  @UseGuards(AuthGuard)
+  @UseGuards(RegisteredUserGuard)
   async me(@CurrentUser() currentUser: User): Promise<User> {
     sendEmail();
     return currentUser;
@@ -73,16 +78,24 @@ export class UserResolver {
   }
 
   @Mutation((returns) => SignInPayload, { nullable: true })
-  async signIn(@Args('signInInput') signInInput: SignInInput) {
-    return await this.userService.signIn(signInInput);
+  async signIn(@Args('signInInput') signInInput: SignInInput, @Context() ctx) {
+    const signInResult = await this.userService.signIn(signInInput);
+
+    this.sessionService.setAccessTokenToCookie(
+      'access-token',
+      signInResult.token,
+      ctx,
+    );
+    return signInResult;
   }
 
   @Mutation((returns) => User, { nullable: true })
-  @UseGuards(AuthGuard)
+  @UseGuards(RegisteredUserGuard)
   async updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
     return await this.userService.updateUser(updateUserInput);
   }
 
+  //TODO need to split to another file
   @ResolveField((returns) => String)
   async type(@Parent() user: User, @CurrentUser() currentUser: User) {
     const isPermitToReadUser = await this.userService.isPermitToReadUser(
@@ -93,28 +106,5 @@ export class UserResolver {
       throw new ForbiddenError('Access denied');
     }
     return user.type;
-  }
-
-  @ResolveField((returns) => String)
-  async resetToken(@Parent() user: User, @CurrentUser() currentUser: User) {
-    const isPermitToReadUser = await this.userService.isPermitToReadUser(
-      currentUser,
-      user._id,
-    );
-    if (!isPermitToReadUser) {
-      throw new ForbiddenError('Access denied');
-    }
-    return user.resetToken;
-  }
-
-  @ResolveField((returns) => String)
-  async activationToken(
-    @Parent() user: User,
-    @CurrentUser() currentUser: User,
-  ) {
-    if (!(await this.userService.isPermitToReadUser(currentUser, user._id))) {
-      throw new ForbiddenError('Access denied');
-    }
-    return user.activationToken;
   }
 }

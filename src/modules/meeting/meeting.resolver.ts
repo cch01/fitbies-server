@@ -1,9 +1,10 @@
 import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Resolver, Query } from '@nestjs/graphql';
 import { InjectModel } from '@nestjs/mongoose';
-import { ApolloError, ForbiddenError } from 'apollo-server-express';
+import { ForbiddenError } from 'apollo-server-express';
 import { Model } from 'mongoose';
-import { AuthGuard } from 'src/decorators/auth.guard';
+import { SessionHandler } from 'src/guards/session.handler';
+import { RegisteredUserGuard } from 'src/guards/registered.user.guard';
 import { CurrentUser } from 'src/decorators/user.decorator';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { ConnectionArgs } from '../common/dto/connection.args';
@@ -14,7 +15,7 @@ import { Meeting, MeetingConnection, MeetingDocument } from './meeting.model';
 import { MeetingService } from './meeting.service';
 
 @Resolver((of) => Meeting)
-@UseGuards(AuthGuard)
+@UseGuards(SessionHandler)
 export class MeetingResolver {
   constructor(
     private readonly userService: UserService,
@@ -24,6 +25,7 @@ export class MeetingResolver {
   ) {}
 
   @Mutation((returns) => Meeting, { nullable: true })
+  @UseGuards(RegisteredUserGuard)
   async createMeeting(
     @Args('createMeetingInput') createMeetingInput: CreateMeetingInput,
     @CurrentUser() currentUser: User,
@@ -42,12 +44,17 @@ export class MeetingResolver {
   @Mutation((returns) => Meeting, { nullable: true })
   async joinMeeting(
     @Args('joinMeetingInput') joinMeetingInput: JoinMeetingInput,
+    @CurrentUser() currentUser: User,
   ) {
+    if (currentUser._id != joinMeetingInput.joinerId) {
+      throw new ForbiddenError('Access denied');
+    }
     //TODO
     return await this.meetingService.joinMeeting(joinMeetingInput);
   }
 
   @Mutation((returns) => Meeting, { nullable: true })
+  @UseGuards(RegisteredUserGuard)
   async endMeeting(
     @Args('meetingId') meetingId: string,
     @CurrentUser() currentUser: User,
@@ -72,20 +79,27 @@ export class MeetingResolver {
   }
 
   @Query((returns) => MeetingConnection)
+  @UseGuards(RegisteredUserGuard)
   async meetings(
     @Args('connectionArgs') connectionArgs: ConnectionArgs,
-    @Args('userId', { nullable: true }) userId: string,
+    @Args('initiatorId', { nullable: true }) initiatorId: string,
+    @Args('joinerId', { nullable: true }) joinerId: string,
     @CurrentUser() currentUser: User,
   ) {
     const isPermitToReadUser = await this.userService.isPermitToReadUser(
       currentUser,
-      userId,
+      initiatorId,
     );
-    if ((!userId && currentUser.type != 'ADMIN') || !isPermitToReadUser) {
+    if ((!initiatorId && currentUser.type != 'ADMIN') || !isPermitToReadUser) {
       throw new ForbiddenError('Access denied');
     }
     return await applyConnectionArgs(connectionArgs, this.meetingModel, {
-      query: userId && { initiator: userId },
+      query: {
+        ...(initiatorId && { initiator: initiatorId }),
+        ...(joinerId && {
+          participants: { $elemMatch: { _id: joinerId } },
+        }),
+      },
     });
   }
   //TODO invitation

@@ -11,7 +11,6 @@ import {
 import * as bcrypt from 'bcrypt';
 import { SessionService } from 'src/modules/session/session.service';
 import { SignInPayload } from './dto/user.payload';
-
 @Injectable()
 export class UserService {
   constructor(
@@ -42,7 +41,7 @@ export class UserService {
 
   async signIn(signInInput: SignInInput): Promise<SignInPayload> {
     const user = await this.userModel.findOne({ email: signInInput.email });
-    console.log('user', user);
+    console.log('user trying to login: ', user);
     if (!user || (user && !this.validatePassword(user, signInInput.password))) {
       throw new ApolloError('User / password mismatch');
     }
