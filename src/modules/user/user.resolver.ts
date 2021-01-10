@@ -118,6 +118,7 @@ export class UserResolver {
   }
 
   @Subscription((returns) => String, { name: 'testForUser', nullable: true })
+  @UseGuards(RegisteredUserGuard)
   async testForUser() {
     return this.pubSub.asyncIterator('testForUser');
   }

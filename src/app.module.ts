@@ -9,7 +9,7 @@ import { CommonModule } from './modules/common/common.module';
 import { SessionModule } from './modules/session/session.module';
 import { MeetingModule } from './modules/meeting/meeting.module';
 import { PubSubModule } from './pub.sub/pub.sub.module';
-
+import * as _ from 'lodash';
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.DB_CONNECTION_URI, {
@@ -19,14 +19,15 @@ import { PubSubModule } from './pub.sub/pub.sub.module';
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       installSubscriptionHandlers: true,
       subscriptions: {
-        onConnect: (param, ws) => {
-          //TODO ws auth!
+        onConnect: (param, ws, connectionContext) => {
+          const authHeader =
+            _.get(param, 'Authorization') || _.get(param, 'authorization');
+          return {
+            webSocketAuth: authHeader,
+          };
         },
       },
-      context: async ({ req, res }) => ({
-        req,
-        res,
-      }),
+      context: async (context) => context,
     }),
     UserModule,
     CommonModule,

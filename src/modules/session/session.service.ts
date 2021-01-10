@@ -29,15 +29,7 @@ export class SessionService {
     ctx.res.cookie(name, `Bearer ${token}`, {
       maxAge: expires,
       httpOnly: true,
-      secure: process.env.ENVIRONMENT != 'DEV' && true,
+      secure: process.env.NODE_ENVIRONMENT != 'DEV' && true,
     });
   }
-  // async decodeJwt(token: string, secret: string): Promise<any> {
-  //   try {
-  //     return jwt.verify(token, secret);
-  //   } catch (err) {
-  //     console.log('Failed to verify');
-  //     return;
-  //   }
-  // }
 }

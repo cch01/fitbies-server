@@ -6,7 +6,7 @@ import { SessionDocument } from 'src/modules/session/session.model';
 import * as moment from 'moment';
 import { AuthenticationError } from 'apollo-server-express';
 import { SessionService } from 'src/modules/session/session.service';
-
+import * as _ from 'lodash';
 @Injectable()
 export class SessionHandler implements CanActivate {
   constructor(
@@ -17,8 +17,16 @@ export class SessionHandler implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context).getContext();
-    if(!ctx.req) return true;
-    const auth = ctx.req.cookies['access-token'];
+    const isWebSocketConnection = !!ctx.connection?.context;
+
+    const auth = isWebSocketConnection
+      ? ctx.connection?.context?.webSocketAuth
+      : _.get(ctx.req, ['cookies', 'access-token']);
+
+    if (isWebSocketConnection && !auth) {
+      return false;
+    }
+
     if (!auth) {
       const guestToken = await this.sessionService.createSession();
       this.sessionService.setAccessTokenToCookie(
@@ -50,11 +58,12 @@ export class SessionHandler implements CanActivate {
 
     await session.set('lastAccess', new Date()).save();
 
-    this.sessionService.setAccessTokenToCookie(
-      'access-token',
-      session.sid,
-      ctx,
-    );
+    !isWebSocketConnection &&
+      this.sessionService.setAccessTokenToCookie(
+        'access-token',
+        session.sid,
+        ctx,
+      );
 
     ctx.user = (await session.populate('user').execPopulate())?.user;
     console.log('user in ctx: ', ctx.user);
