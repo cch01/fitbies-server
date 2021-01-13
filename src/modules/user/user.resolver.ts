@@ -82,15 +82,13 @@ export class UserResolver {
 
   @Mutation((returns) => SignInPayload, { nullable: true })
   async signIn(@Args('signInInput') signInInput: SignInInput, @Context() ctx) {
-    this.sessionService.clearAccessToken(ctx);
     const signInResult = await this.userService.signIn(signInInput);
-    this.sessionService.setAccessTokenToCookie(signInResult.token, ctx);
+    this.sessionService.setAccessTokenToResponseHeader(signInResult.token, ctx);
     return signInResult;
   }
   @Mutation((returns) => Boolean, { nullable: true })
   async signOut(@Context() ctx) {
     ctx.user && (await this.sessionService.signOut(ctx.token));
-    this.sessionService.clearAccessToken(ctx);
     return true;
   }
 
@@ -100,7 +98,6 @@ export class UserResolver {
     return await this.userService.updateUser(updateUserInput);
   }
 
-  //TODO need to split to another file
   @ResolveField((returns) => String)
   async type(@Parent() user: User, @CurrentUser() currentUser: User) {
     const isPermitToReadUser = await this.userService.isPermitToReadUser(

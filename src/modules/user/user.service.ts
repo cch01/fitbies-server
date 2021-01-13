@@ -47,7 +47,7 @@ export class UserService {
     }
 
     const token = await this.sessionService.createSession(user.id);
-    console.log('token', token);
+    console.log('token created', token);
     return {
       token,
       user,

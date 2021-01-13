@@ -18,11 +18,13 @@ export class SessionHandler implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context).getContext();
     const isWebSocketConnection = !!ctx.connection?.context;
-    console.log('isWebSocketConnection', isWebSocketConnection);
-    console.log(_.get(ctx.req, ['cookies', 'access-token']));
+
+    const httpAuth =
+      ctx.req?.headers?.authorization || ctx.req?.headers?.Authorization;
+
     const auth = isWebSocketConnection
       ? ctx.connection?.context?.webSocketAuth
-      : _.get(ctx.req, ['cookies', 'access-token']);
+      : httpAuth;
     console.log('auth', auth);
     if (isWebSocketConnection && !auth) {
       return false;
@@ -30,31 +32,22 @@ export class SessionHandler implements CanActivate {
 
     if (!auth) {
       const guestToken = await this.sessionService.createSession();
-      this.sessionService.setAccessTokenToCookie(guestToken, ctx);
-      console.log('guestToken: ' + guestToken);
+      this.sessionService.setAccessTokenToResponseHeader(guestToken, ctx);
       ctx.token = guestToken;
       return true;
     }
 
     const token = auth.replace(/^Bearer\s/, '');
-    console.log(token);
+
     const session = await this.sessionModel.findOne({
       sid: token,
     });
 
     if (!session) {
-      this.sessionService.clearAccessToken(ctx);
       throw new AuthenticationError('Invalid Token');
     }
 
-    if (
-      (moment()
-        .subtract(parseInt(process.env.LOGIN_TOKEN_EXPIRY_DAY), 'days')
-        .isAfter(moment(session.lastAccess)) &&
-        session.user) ||
-      session.logoutAt
-    ) {
-      this.sessionService.clearAccessToken(ctx);
+    if (isTokenExpired(session)) {
       throw new AuthenticationError('Token Expired');
     }
 
@@ -65,4 +58,14 @@ export class SessionHandler implements CanActivate {
     console.log('user in ctx: ', ctx.user);
     return true;
   }
+}
+
+function isTokenExpired(session): boolean {
+  return (
+    (moment()
+      .subtract(parseInt(process.env.LOGIN_TOKEN_EXPIRY_DAY), 'days')
+      .isAfter(moment(session.lastAccess)) &&
+      session.user) ||
+    session.logoutAt
+  );
 }

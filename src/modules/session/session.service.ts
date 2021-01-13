@@ -23,25 +23,10 @@ export class SessionService {
       { $set: { logoutAt: new Date() } },
     );
   }
-  setAccessTokenToCookie(
-    token: string,
-    ctx: any,
-    expires: number = parseInt(process.env.LOGIN_TOKEN_EXPIRY_DAY) *
-      24 *
-      60 *
-      60 *
-      1000,
-  ): void {
-    console.log('token being set', token);
-    // ctx.res.clearCookie('access-token');
-    ctx.res.cookie('access-token', `Bearer ${token}`, {
-      maxAge: expires,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-    });
-  }
 
-  clearAccessToken(ctx: any): void {
-    ctx.res.clearCookie('access-token');
+  setAccessTokenToResponseHeader(token: string, ctx: any): void {
+    console.log('token being set', token);
+    ctx.res.setHeader('Access-Control-Expose-Headers', 'Authorization');
+    ctx.res.setHeader('Authorization', `Bearer ${token}`);
   }
 }
