@@ -20,14 +20,20 @@ import * as _ from 'lodash';
       installSubscriptionHandlers: true,
       subscriptions: {
         onConnect: (param, ws, connectionContext) => {
+          console.log('someone connected via websocket');
           const authHeader =
             _.get(param, 'Authorization') || _.get(param, 'authorization');
+          console.log('auth in ws', authHeader);
           return {
             webSocketAuth: authHeader,
           };
         },
       },
       context: async (context) => context,
+      cors: {
+        origin: 'http://localhost:4000',
+        credentials: true,
+      },
     }),
     UserModule,
     CommonModule,

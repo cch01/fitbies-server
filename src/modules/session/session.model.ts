@@ -16,6 +16,9 @@ export class Session {
 
   @Prop({ type: SchemaTypes.ObjectId, ref: 'user' })
   user: string;
+
+  @Prop()
+  logoutAt: Date;
 }
 
 const SessionSchema = SchemaFactory.createForClass(Session);

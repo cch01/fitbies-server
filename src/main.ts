@@ -9,8 +9,10 @@ const peerPort = parseInt(process.env.PEER_PORT);
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.use(cookieParser());
+  app.use(cookieParser({}));
+  app.enableCors({ origin: 'http://localhost:4000', credentials: true });
   initPeerServer(peerPort);
+  console.log(`Peer server listing on ${peerPort}/rooms`);
   app.listen(PORT);
 }
 bootstrap();

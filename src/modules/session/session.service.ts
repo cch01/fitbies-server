@@ -16,8 +16,14 @@ export class SessionService {
       }).save()
     ).sid;
   }
+
+  async signOut(sid: string): Promise<void> {
+    await this.sessionModel.findOneAndUpdate(
+      { sid },
+      { $set: { logoutAt: new Date() } },
+    );
+  }
   setAccessTokenToCookie(
-    name: string,
     token: string,
     ctx: any,
     expires: number = parseInt(process.env.LOGIN_TOKEN_EXPIRY_DAY) *
@@ -26,10 +32,16 @@ export class SessionService {
       60 *
       1000,
   ): void {
-    ctx.res.cookie(name, `Bearer ${token}`, {
+    console.log('token being set', token);
+    // ctx.res.clearCookie('access-token');
+    ctx.res.cookie('access-token', `Bearer ${token}`, {
       maxAge: expires,
       httpOnly: true,
-      secure: process.env.NODE_ENVIRONMENT != 'DEV' && true,
+      secure: process.env.NODE_ENV === 'production',
     });
+  }
+
+  clearAccessToken(ctx: any): void {
+    ctx.res.clearCookie('access-token');
   }
 }

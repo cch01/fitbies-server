@@ -113,6 +113,7 @@ enum SortOrder {
 type Mutation {
   signUp(signUpInput: SignUpInput!): User
   signIn(signInInput: SignInInput!): SignInPayload
+  signOut: Boolean
   updateUser(updateUserInput: UpdateUserInput!): User
   checkUser(id: String!): String!
   createMeeting(createMeetingInput: CreateMeetingInput!): Meeting
@@ -155,4 +156,5 @@ input JoinMeetingInput {
 
 type Subscription {
   testForUser: String
+  testForUser1: String
 }

@@ -18,22 +18,21 @@ export class SessionHandler implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context).getContext();
     const isWebSocketConnection = !!ctx.connection?.context;
-
+    console.log('isWebSocketConnection', isWebSocketConnection);
+    console.log(_.get(ctx.req, ['cookies', 'access-token']));
     const auth = isWebSocketConnection
       ? ctx.connection?.context?.webSocketAuth
       : _.get(ctx.req, ['cookies', 'access-token']);
-
+    console.log('auth', auth);
     if (isWebSocketConnection && !auth) {
       return false;
     }
 
     if (!auth) {
       const guestToken = await this.sessionService.createSession();
-      this.sessionService.setAccessTokenToCookie(
-        'access-token',
-        guestToken,
-        ctx,
-      );
+      this.sessionService.setAccessTokenToCookie(guestToken, ctx);
+      console.log('guestToken: ' + guestToken);
+      ctx.token = guestToken;
       return true;
     }
 
@@ -44,28 +43,25 @@ export class SessionHandler implements CanActivate {
     });
 
     if (!session) {
+      this.sessionService.clearAccessToken(ctx);
       throw new AuthenticationError('Invalid Token');
     }
 
     if (
-      moment()
+      (moment()
         .subtract(parseInt(process.env.LOGIN_TOKEN_EXPIRY_DAY), 'days')
         .isAfter(moment(session.lastAccess)) &&
-      session.user
+        session.user) ||
+      session.logoutAt
     ) {
+      this.sessionService.clearAccessToken(ctx);
       throw new AuthenticationError('Token Expired');
     }
 
     await session.set('lastAccess', new Date()).save();
 
-    !isWebSocketConnection &&
-      this.sessionService.setAccessTokenToCookie(
-        'access-token',
-        session.sid,
-        ctx,
-      );
-
     ctx.user = (await session.populate('user').execPopulate())?.user;
+    ctx.token = session.sid;
     console.log('user in ctx: ', ctx.user);
     return true;
   }

@@ -82,14 +82,16 @@ export class UserResolver {
 
   @Mutation((returns) => SignInPayload, { nullable: true })
   async signIn(@Args('signInInput') signInInput: SignInInput, @Context() ctx) {
+    this.sessionService.clearAccessToken(ctx);
     const signInResult = await this.userService.signIn(signInInput);
-
-    this.sessionService.setAccessTokenToCookie(
-      'access-token',
-      signInResult.token,
-      ctx,
-    );
+    this.sessionService.setAccessTokenToCookie(signInResult.token, ctx);
     return signInResult;
+  }
+  @Mutation((returns) => Boolean, { nullable: true })
+  async signOut(@Context() ctx) {
+    ctx.user && (await this.sessionService.signOut(ctx.token));
+    this.sessionService.clearAccessToken(ctx);
+    return true;
   }
 
   @Mutation((returns) => User, { nullable: true })
@@ -113,13 +115,28 @@ export class UserResolver {
 
   @Mutation((returns) => String)
   async checkUser(@Args('id') id: string) {
+    this.pubSub.publish('testForUser1', { testForUser1: id });
     this.pubSub.publish('testForUser', { testForUser: id });
+
     return id;
   }
 
-  @Subscription((returns) => String, { name: 'testForUser', nullable: true })
+  @Subscription((returns) => String, {
+    name: 'testForUser',
+    nullable: true,
+    // filter: (payload, variables, context) => {
+    //   console.log('context in subscription', context.user);
+    //   return payload.testForUser === context.user.type;
+    // },
+  })
   @UseGuards(RegisteredUserGuard)
   async testForUser() {
     return this.pubSub.asyncIterator('testForUser');
+  }
+
+  @Subscription((returns) => String, { name: 'testForUser1', nullable: true })
+  @UseGuards(RegisteredUserGuard)
+  async testForUser1() {
+    return this.pubSub.asyncIterator('testForUser1');
   }
 }

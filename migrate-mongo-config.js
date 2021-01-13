@@ -3,7 +3,7 @@
 const config = {
   mongodb: {
     // TODO Change (or review) the url to your MongoDB:
-    url: process.env.MONGO_MIGRATION_URL,
+    url: process.env.DB_CONNECTION_URI,
 
     // TODO Change this to your database name:
     // databaseName: "YOURDATABASENAME",
