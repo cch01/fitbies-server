@@ -13,5 +13,29 @@ services:
     volumes:
       - db-data:/var/lib/mongo/data
       - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - backend-servers
+
+  zoomed_back:
+    container_name: zoomed_back
+    build: .
+    env_file:
+      - ./.env
+    environment:
+      - PORT=3000
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - backend-servers
+    command: >
+      bash -c "yarn install
+      && npx migrate-mongo up && yarn start:dev"
 volumes:
   db-data:
+networks:
+  backend-servers:
+    external: false
+    name: backend-servers
