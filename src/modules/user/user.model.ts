@@ -6,16 +6,6 @@ import { Paginated } from 'src/utils/create.paginated.schema';
 
 export type UserDocument = User & Document;
 
-enum UserStatus {
-  ONLINE = 'ONLINE',
-  IN_A_MEETING = 'IN_A_MEETING',
-  OFF_LINE = 'OFF_LINE',
-}
-
-registerEnumType(UserStatus, {
-  name: 'UserStatus',
-});
-
 @Schema({ collection: 'users', timestamps: true })
 @ObjectType()
 export class User {
@@ -47,8 +37,8 @@ export class User {
   type?: UserType;
 
   @Prop({ required: false })
-  @Field((type) => UserStatus, { nullable: true })
-  status: UserStatus;
+  @Field((type) => UserCurrentStates, { nullable: true })
+  status: UserCurrentStates;
 
   @Prop()
   resetToken?: string;
@@ -88,3 +78,13 @@ export const UserModel = MongooseModule.forFeature([
 
 @ObjectType('UserConnection')
 export class UserConnection extends Paginated(User) {}
+
+export enum UserCurrentStates {
+  ONLINE = 'ONLINE',
+  MEETING = 'MEETING',
+  OFFLINE = 'OFFLINE',
+}
+
+registerEnumType(UserCurrentStates, {
+  name: 'UserCurrentStates',
+});

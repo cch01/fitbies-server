@@ -15,7 +15,7 @@ async function bootstrap() {
     credentials: true,
   });
   initPeerServer(peerPort);
-  console.log(`Peer server listing on ${peerPort}/rooms`);
+  console.log(`Peer server listing on ${peerPort}/meetings`);
   app.listen(PORT);
 }
 bootstrap();

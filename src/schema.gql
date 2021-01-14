@@ -9,7 +9,7 @@ type User {
   lastName: String
   email: String
   type: UserType
-  status: UserStatus
+  status: UserCurrentStates
   isActivated: Boolean
   registeredAt: DateTime
   createdAt: DateTime
@@ -21,10 +21,10 @@ enum UserType {
   ADMIN
 }
 
-enum UserStatus {
+enum UserCurrentStates {
   ONLINE
-  IN_A_MEETING
-  OFF_LINE
+  MEETING
+  OFFLINE
 }
 
 """
@@ -48,9 +48,40 @@ type UserConnection {
   dataCountInPage: Int
 }
 
+type PersonalMessage {
+  from: User!
+  to: ID!
+  content: String!
+  sentAt: DateTime!
+}
+
+type UserState {
+  user: User!
+  state: UserCurrentStates!
+}
+
+type MeetingInvitation {
+  meetingId: String!
+  inviter: User!
+}
+
 type SignInPayload {
   token: String!
   user: User!
+}
+
+type UserChannelPayload {
+  to: User!
+  eventType: UserChannelEventType!
+  personalMessage: PersonalMessage
+  friendState: UserState
+  meetingInvitation: MeetingInvitation
+}
+
+enum UserChannelEventType {
+  MEETING_INVITATION
+  PERSONAL_MESSAGE
+  FRIEND_STATUS
 }
 
 type Participant {
@@ -86,13 +117,41 @@ type MeetingConnection {
   dataCountInPage: Int
 }
 
+type JoinMeetingApproval {
+  joinerId: ID!
+  approval: Boolean!
+}
+
+type MeetingMessage {
+  content: String
+  sentAt: DateTime
+}
+
+type MeetingEventsPayload {
+  type: MeetingEventType!
+  from: User!
+  toMeeting: Meeting
+  message: MeetingMessage
+  userToBeKickedOut: User
+  joinApproval: JoinMeetingApproval
+}
+
+enum MeetingEventType {
+  JOIN_REQUEST
+  JOIN_RESPONSE
+  MESSAGE
+  KICK_USER
+  END_MEETING
+  LEAVE_MEETING
+}
+
 type Query {
   user(email: String, _id: ID): User
   users(connectionArgs: ConnectionArgs): UserConnection
   me: User!
   healthCheck: Boolean!
-  meeting(meetingId: String!): Meeting
-  meetings(joinerId: String, initiatorId: String, connectionArgs: ConnectionArgs!): MeetingConnection!
+  meeting(meetingId: ID!): Meeting
+  meetings(joinerId: ID, initiatorId: ID, connectionArgs: ConnectionArgs!): MeetingConnection!
 }
 
 input ConnectionArgs {
@@ -115,11 +174,11 @@ type Mutation {
   signIn(signInInput: SignInInput!): SignInPayload
   signOut: Boolean
   updateUser(updateUserInput: UpdateUserInput!): User
-  checkUser(id: String!): String!
+  checkUser(id: ID!): String!
   createMeeting(createMeetingInput: CreateMeetingInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
-  endMeeting(meetingId: String!): Meeting
-  leaveMeeting(meetingId: String!): Meeting
+  endMeeting(meetingId: ID!): Meeting
+  leaveMeeting(meetingId: ID!): Meeting
 }
 
 input SignUpInput {
@@ -155,6 +214,7 @@ input JoinMeetingInput {
 }
 
 type Subscription {
-  testForUser: String
-  testForUser1: String
+  testForUser(userId: ID!): String
+  userChannel(userId: ID!): UserChannelPayload!
+  meetingChannel(meetingId: ID!, userId: ID!): MeetingEventsPayload!
 }

@@ -1,10 +1,21 @@
-import { UseGuards } from '@nestjs/common';
-import { Args, Mutation, Resolver, Query } from '@nestjs/graphql';
+import { Inject, UseGuards } from '@nestjs/common';
+import {
+  Args,
+  Mutation,
+  Resolver,
+  Query,
+  Subscription,
+  ID,
+} from '@nestjs/graphql';
 import { InjectModel } from '@nestjs/mongoose';
-import { ForbiddenError } from 'apollo-server-express';
+import {
+  ApolloError,
+  ForbiddenError,
+  PubSubEngine,
+} from 'apollo-server-express';
 import { Model } from 'mongoose';
 import { SessionHandler } from 'src/guards/session.handler';
-import { RegisteredUserGuard } from 'src/guards/registered.user.guard';
+import { ActivatedUserGuard } from 'src/guards/activated.user.guard';
 import { CurrentUser } from 'src/decorators/user.decorator';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { ConnectionArgs } from '../common/dto/connection.args';
@@ -13,7 +24,11 @@ import { UserService } from '../user/user.service';
 import { CreateMeetingInput, JoinMeetingInput } from './dto/meeting.input';
 import { Meeting, MeetingConnection, MeetingDocument } from './meeting.model';
 import { MeetingService } from './meeting.service';
+import { GeneralUserGuard } from 'src/guards/general.user.guard';
+import { MeetingEventsPayload } from './dto/meeting.payload';
+import * as _ from 'lodash';
 
+//TODO add pubsub dispatching on meeting resolvers / services
 @Resolver((of) => Meeting)
 @UseGuards(SessionHandler)
 export class MeetingResolver {
@@ -22,10 +37,11 @@ export class MeetingResolver {
     private readonly meetingService: MeetingService,
     @InjectModel('meeting')
     private readonly meetingModel: Model<MeetingDocument>,
+    @Inject('PUB_SUB') private readonly pubSub: PubSubEngine,
   ) {}
 
   @Mutation((returns) => Meeting, { nullable: true })
-  @UseGuards(RegisteredUserGuard)
+  @UseGuards(ActivatedUserGuard)
   async createMeeting(
     @Args('createMeetingInput') createMeetingInput: CreateMeetingInput,
     @CurrentUser() currentUser: User,
@@ -54,9 +70,9 @@ export class MeetingResolver {
   }
 
   @Mutation((returns) => Meeting, { nullable: true })
-  @UseGuards(RegisteredUserGuard)
+  @UseGuards(ActivatedUserGuard)
   async endMeeting(
-    @Args('meetingId') meetingId: string,
+    @Args('meetingId', { type: () => ID }) meetingId: string,
     @CurrentUser() currentUser: User,
   ) {
     return this.meetingService.endMeeting(meetingId, currentUser);
@@ -64,7 +80,7 @@ export class MeetingResolver {
 
   @Mutation((returns) => Meeting, { nullable: true })
   async leaveMeeting(
-    @Args('meetingId') meetingId: string,
+    @Args('meetingId', { type: () => ID }) meetingId: string,
     @CurrentUser() currentUser: User,
   ) {
     return this.meetingService.leaveMeeting(meetingId, currentUser._id);
@@ -72,18 +88,19 @@ export class MeetingResolver {
 
   @Query((returns) => Meeting, { nullable: true })
   async meeting(
-    @Args('meetingId') meetingId: string,
+    @Args('meetingId', { type: () => ID }) meetingId: string,
     @CurrentUser() currentUser: User,
   ) {
     return this.meetingService.meeting(meetingId, currentUser);
   }
 
   @Query((returns) => MeetingConnection)
-  @UseGuards(RegisteredUserGuard)
+  @UseGuards(ActivatedUserGuard)
   async meetings(
     @Args('connectionArgs') connectionArgs: ConnectionArgs,
-    @Args('initiatorId', { nullable: true }) initiatorId: string,
-    @Args('joinerId', { nullable: true }) joinerId: string,
+    @Args('initiatorId', { type: () => ID, nullable: true })
+    initiatorId: string,
+    @Args('joinerId', { type: () => ID, nullable: true }) joinerId: string,
     @CurrentUser() currentUser: User,
   ) {
     const isPermitToReadUser = await this.userService.isPermitToReadUser(
@@ -101,6 +118,33 @@ export class MeetingResolver {
         }),
       },
     });
+  }
+
+  @Subscription((returns) => MeetingEventsPayload, {
+    async filter(this: MeetingResolver, { meetingChannel }, input, context) {
+      return await this.meetingService.checkMeetingEventsPayload(
+        meetingChannel,
+        input,
+        context,
+      );
+    },
+  })
+  @UseGuards(GeneralUserGuard)
+  async meetingChannel(
+    @Args('userId', { type: () => ID }) userId: string,
+    @Args('meetingId', { type: () => ID }) meetingId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    if (userId !== currentUser._id.toString()) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    const meeting = await this.meetingModel.findById(meetingId);
+    if (!meeting) {
+      throw new ApolloError('Meeting not found');
+    }
+
+    return this.pubSub.asyncIterator('meetingChannel');
   }
   //TODO invitation
 }

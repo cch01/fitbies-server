@@ -3,7 +3,7 @@ import { PeerServer } from 'peer';
 export default function (port: number): any {
   const peerServer = PeerServer({
     port,
-    path: '/rooms',
+    path: '/meetings',
     key: process.env.PEER_SERVER_KEY,
   });
 

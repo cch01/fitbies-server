@@ -12,9 +12,9 @@ import {
   Subscription,
 } from '@nestjs/graphql';
 import { CurrentUser } from 'src/decorators/user.decorator';
-import { RegisteredUserGuard } from 'src/guards/registered.user.guard';
+import { ActivatedUserGuard } from 'src/guards/activated.user.guard';
 import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
-import { SignInPayload } from './dto/user.payload';
+import { SignInPayload, UserChannelPayload } from './dto/user.payload';
 import { User, UserConnection, UserDocument } from './user.model';
 import { UserService } from './user.service';
 import {
@@ -30,6 +30,7 @@ import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { SessionHandler } from 'src/guards/session.handler';
 import { SessionService } from '../session/session.service';
 import { PubSubEngine } from 'graphql-subscriptions';
+import { GeneralUserGuard } from 'src/guards/general.user.guard';
 
 //TODO forgot pw
 @Resolver((of) => User)
@@ -43,17 +44,17 @@ export class UserResolver {
   ) {}
 
   @Query((returns) => User, { nullable: true })
-  @UseGuards(RegisteredUserGuard)
+  @UseGuards(ActivatedUserGuard)
   async user(
     @Args('_id', { type: () => ID, nullable: true }) _id: string,
-    @Args('email', { type: () => String, nullable: true }) email: string,
+    @Args('email', { nullable: true }) email: string,
     @CurrentUser() currentUser: User,
   ): Promise<User> {
     return await this.userService.findUser(currentUser, { _id, email });
   }
 
   @Query((returns) => UserConnection, { nullable: true })
-  @UseGuards(RegisteredUserGuard)
+  @UseGuards(ActivatedUserGuard)
   async users(
     @Args('connectionArgs', { type: () => ConnectionArgs, nullable: true })
     connectionArgs: ConnectionArgs,
@@ -66,7 +67,7 @@ export class UserResolver {
   }
 
   @Query((returns) => User)
-  @UseGuards(RegisteredUserGuard)
+  @UseGuards(ActivatedUserGuard)
   async me(@CurrentUser() currentUser: User): Promise<User> {
     sendEmail();
     return currentUser;
@@ -93,7 +94,7 @@ export class UserResolver {
   }
 
   @Mutation((returns) => User, { nullable: true })
-  @UseGuards(RegisteredUserGuard)
+  @UseGuards(ActivatedUserGuard)
   async updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
     return await this.userService.updateUser(updateUserInput);
   }
@@ -111,7 +112,7 @@ export class UserResolver {
   }
 
   @Mutation((returns) => String)
-  async checkUser(@Args('id') id: string) {
+  async checkUser(@Args('id', { type: () => ID }) id: string) {
     this.pubSub.publish('testForUser1', { testForUser1: id });
     this.pubSub.publish('testForUser', { testForUser: id });
 
@@ -121,19 +122,29 @@ export class UserResolver {
   @Subscription((returns) => String, {
     name: 'testForUser',
     nullable: true,
-    // filter: (payload, variables, context) => {
-    //   console.log('context in subscription', context.user);
-    //   return payload.testForUser === context.user.type;
-    // },
+    filter(this: UserResolver, { testForUser }, variables, context) {
+      console.log(testForUser);
+      console.log('context in subscription', context.user);
+      return true;
+    },
   })
-  @UseGuards(RegisteredUserGuard)
-  async testForUser() {
+  async testForUser(@Args('userId', { type: () => ID }) userId: string) {
     return this.pubSub.asyncIterator('testForUser');
   }
 
-  @Subscription((returns) => String, { name: 'testForUser1', nullable: true })
-  @UseGuards(RegisteredUserGuard)
-  async testForUser1() {
-    return this.pubSub.asyncIterator('testForUser1');
+  @Subscription((returns) => UserChannelPayload, {
+    filter: (payload, { userId }, context) => {
+      return payload.userChannel.to._id === userId;
+    },
+  })
+  @UseGuards(ActivatedUserGuard)
+  async userChannel(
+    @Args('userId', { type: () => ID }) userId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    if (userId !== currentUser._id.toString()) {
+      throw new ForbiddenError('Access denied');
+    }
+    return this.pubSub.asyncIterator('userChannel');
   }
 }

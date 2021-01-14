@@ -5,7 +5,9 @@ import { Model } from 'mongoose';
 import { User } from '../user/user.model';
 import { UserService } from '../user/user.service';
 import { CreateMeetingInput, JoinMeetingInput } from './dto/meeting.input';
+import { MeetingEventsPayload, MeetingEventType } from './dto/meeting.payload';
 import { Meeting, MeetingDocument } from './meeting.model';
+import * as _ from 'lodash';
 
 @Injectable()
 export class MeetingService {
@@ -146,5 +148,31 @@ export class MeetingService {
     }
 
     return meeting;
+  }
+
+  async checkMeetingEventsPayload(
+    { type }: MeetingEventsPayload,
+    { userId, meetingId }: { userId: string; meetingId: string },
+    ctx: any,
+  ): Promise<boolean> {
+    const meeting = await this.meetingModel.findById(meetingId);
+    const isJoinRequest = type === MeetingEventType.JOIN_REQUEST;
+
+    if (!meeting) return false;
+
+    const userIsParticipant =
+      meeting.participants.findIndex(
+        (participant) => participant._id === ctx.user._id.toString(),
+      ) > -1;
+
+    if (!!meeting.endedAt || (!userIsParticipant && !isJoinRequest)) {
+      return false;
+    }
+
+    if (isJoinRequest && meeting.initiator !== ctx.user._id.toString()) {
+      return false;
+    }
+
+    if (meeting) return true;
   }
 }
