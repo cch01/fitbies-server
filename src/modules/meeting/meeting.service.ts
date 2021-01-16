@@ -76,7 +76,7 @@ export class MeetingService {
             'participants.$.isLeft': false,
           },
         },
-        { useFindAndModify: true, new: true, upsert: true },
+        { useFindAndModify: true, new: true },
       );
     }
     return updatedMeeting;
