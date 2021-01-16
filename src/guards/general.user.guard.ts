@@ -5,7 +5,7 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 export class GeneralUserGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const ctx = GqlExecutionContext.create(context).getContext();
-    console.log('ctx user in user guard', ctx.user);
+    console.log('ctx user in general user guard', ctx.user);
     return !!ctx.user;
   }
 }

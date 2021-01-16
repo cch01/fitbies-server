@@ -133,6 +133,7 @@ export class MeetingResolver {
     { meetingId, email, userId }: InviteMeetingInput,
     @CurrentUser() currentUser: User,
   ) {
+    //TODO: fix this checking
     if (!(meetingId || userId)) {
       throw new UserInputError(
         'At least meetingId or userId must be specified',

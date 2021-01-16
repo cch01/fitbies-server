@@ -52,7 +52,6 @@ export class SessionHandler implements CanActivate {
     }
 
     await session.set('lastAccess', new Date()).save();
-
     ctx.user = (await session.populate('user').execPopulate())?.user;
     ctx.token = session.sid;
     console.log('user in ctx: ', ctx.user);
