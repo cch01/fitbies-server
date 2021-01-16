@@ -1,5 +1,5 @@
 import { Field, ID, InputType } from '@nestjs/graphql';
-
+import { IsEmail } from 'class-validator';
 @InputType()
 export class CreateMeetingInput {
   @Field((type) => ID)
@@ -7,9 +7,6 @@ export class CreateMeetingInput {
 
   @Field({ nullable: true })
   passCode?: string;
-
-  @Field({ nullable: true })
-  needApproval: boolean;
 }
 
 @InputType()
@@ -22,4 +19,17 @@ export class JoinMeetingInput {
 
   @Field({ nullable: true })
   passCode?: string;
+}
+
+@InputType()
+export class InviteMeetingInput {
+  @Field((type) => ID, { nullable: true })
+  userId?: string;
+
+  @IsEmail()
+  @Field({ nullable: true })
+  email?: string;
+
+  @Field((type) => ID)
+  meetingId: string;
 }

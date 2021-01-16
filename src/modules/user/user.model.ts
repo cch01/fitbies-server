@@ -46,7 +46,7 @@ export class User {
   @Prop()
   activationToken?: string;
 
-  @Field({ nullable: true })
+  @Field({ nullable: true, defaultValue: false })
   @Prop()
   isActivated?: boolean;
 

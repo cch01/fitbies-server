@@ -1,4 +1,12 @@
 version: '3.8'
+networks:
+  backend-servers:
+    external: 
+      name: backend-servers
+volumes:
+  db:
+    driver: local
+
 services:
   mongo:
     image: mongo:4.4.2
@@ -11,7 +19,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: zOOmed
       MONGO_INITDB_DATABASE: zoomed
     volumes:
-      - db-data:/var/lib/mongo/data
+      - db:/data/db
       - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
     networks:
       - backend-servers
@@ -33,9 +41,3 @@ services:
     command: >
       bash -c "yarn install
       && npx migrate-mongo up && yarn start:dev"
-volumes:
-  db-data:
-networks:
-  backend-servers:
-    external: false
-    name: backend-servers

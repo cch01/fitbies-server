@@ -15,6 +15,9 @@ export class SignUpInput {
   @Field()
   password: string;
 
+  @Field()
+  nickname: string;
+
   @Field((type) => UserType)
   type: UserType;
 }

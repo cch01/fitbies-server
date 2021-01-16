@@ -86,19 +86,18 @@ enum UserChannelEventType {
 
 type Participant {
   _id: ID!
-  approvedAt: DateTime
+  joinedAt: DateTime
   leftAt: DateTime
   isLeft: Boolean
 }
 
 type Meeting {
   _id: ID!
+  roomId: String
   initiator: User
   participants: [Participant!]
   passCode: String
-  meetingInvitationToken: String
   endedAt: DateTime
-  needApproval: Boolean
 }
 
 type MeetingEdge {
@@ -117,11 +116,6 @@ type MeetingConnection {
   dataCountInPage: Int
 }
 
-type JoinMeetingApproval {
-  joinerId: ID!
-  approval: Boolean!
-}
-
 type MeetingMessage {
   content: String
   sentAt: DateTime
@@ -133,12 +127,10 @@ type MeetingEventsPayload {
   toMeeting: Meeting
   message: MeetingMessage
   userToBeKickedOut: User
-  joinApproval: JoinMeetingApproval
 }
 
 enum MeetingEventType {
-  JOIN_REQUEST
-  JOIN_RESPONSE
+  USER_JOINED
   MESSAGE
   KICK_USER
   END_MEETING
@@ -174,11 +166,11 @@ type Mutation {
   signIn(signInInput: SignInInput!): SignInPayload
   signOut: Boolean
   updateUser(updateUserInput: UpdateUserInput!): User
-  checkUser(id: ID!): String!
   createMeeting(createMeetingInput: CreateMeetingInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
   endMeeting(meetingId: ID!): Meeting
   leaveMeeting(meetingId: ID!): Meeting
+  inviteMeeting(inviteMeetingInput: InviteMeetingInput!): Meeting!
 }
 
 input SignUpInput {
@@ -186,6 +178,7 @@ input SignUpInput {
   lastName: String!
   email: String!
   password: String!
+  nickname: String!
   type: UserType!
 }
 
@@ -204,7 +197,6 @@ input UpdateUserInput {
 input CreateMeetingInput {
   initiatorId: ID!
   passCode: String
-  needApproval: Boolean
 }
 
 input JoinMeetingInput {
@@ -213,8 +205,13 @@ input JoinMeetingInput {
   passCode: String
 }
 
+input InviteMeetingInput {
+  userId: ID
+  email: String
+  meetingId: ID!
+}
+
 type Subscription {
-  testForUser(userId: ID!): String
   userChannel(userId: ID!): UserChannelPayload!
   meetingChannel(meetingId: ID!, userId: ID!): MeetingEventsPayload!
 }

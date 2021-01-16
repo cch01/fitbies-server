@@ -3,6 +3,7 @@ export default function meetingInvitationEmail(
   url: string,
   passCode?: string,
 ): string {
+  console.log(url);
   return `
 <!DOCTYPE html>
 <html>

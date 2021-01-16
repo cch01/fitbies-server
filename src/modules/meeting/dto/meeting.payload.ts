@@ -1,10 +1,9 @@
-import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { User } from 'src/modules/user/user.model';
 import { Meeting } from '../meeting.model';
 
 export enum MeetingEventType {
-  JOIN_REQUEST = 'JOIN_REQUEST',
-  JOIN_RESPONSE = 'JOIN_RESPONSE',
+  USER_JOINED = 'USER_JOINED',
   MESSAGE = 'MESSAGE',
   KICK_USER = 'KICK_USER',
   END_MEETING = 'END_MEETING',
@@ -15,14 +14,6 @@ registerEnumType(MeetingEventType, {
   name: 'MeetingEventType',
 });
 
-@ObjectType()
-export class JoinMeetingApproval {
-  @Field((type) => ID)
-  joinerId: string;
-
-  @Field()
-  approval: boolean;
-}
 @ObjectType()
 export class MeetingMessage {
   @Field({ nullable: true })
@@ -48,7 +39,4 @@ export class MeetingEventsPayload {
 
   @Field((type) => User, { nullable: true })
   userToBeKickedOut?: User;
-
-  @Field({ nullable: true })
-  joinApproval?: JoinMeetingApproval;
 }

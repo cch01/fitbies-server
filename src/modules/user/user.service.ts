@@ -10,7 +10,14 @@ import {
 } from 'apollo-server-express';
 import * as bcrypt from 'bcrypt';
 import { SessionService } from 'src/modules/session/session.service';
-import { SignInPayload } from './dto/user.payload';
+import {
+  MeetingInvitation,
+  PersonalMessage,
+  SignInPayload,
+  UserChannelEventType,
+  UserChannelPayload,
+  UserState,
+} from './dto/user.payload';
 @Injectable()
 export class UserService {
   constructor(
@@ -26,6 +33,7 @@ export class UserService {
     const newUser = new this.userModel({
       ...signUpInput,
       password: encryptedPw,
+      isActivated: true,
     });
     return newUser.save();
   }
@@ -56,6 +64,22 @@ export class UserService {
 
   validatePassword(user: User, password: string): boolean {
     return bcrypt.compareSync(password, user.password);
+  }
+
+  createUserChannelPayload(
+    to: User,
+    eventType: UserChannelEventType,
+    personalMessage?: PersonalMessage,
+    friendState?: UserState,
+    meetingInvitation?: MeetingInvitation,
+  ): UserChannelPayload {
+    return {
+      to,
+      eventType,
+      personalMessage,
+      friendState,
+      meetingInvitation,
+    };
   }
 
   async findUser(
@@ -102,7 +126,8 @@ export class UserService {
       case 'ADMIN':
         return true;
       default:
-        if (!user || user._id.toString() !== targetUserId) return false;
+        if (!user || user._id.toString() != targetUserId.toString())
+          return false;
     }
     return true;
   }

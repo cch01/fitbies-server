@@ -7,7 +7,6 @@ import {
   ID,
   ResolveField,
   Parent,
-  Root,
   Context,
   Subscription,
 } from '@nestjs/graphql';
@@ -17,11 +16,7 @@ import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
 import { SignInPayload, UserChannelPayload } from './dto/user.payload';
 import { User, UserConnection, UserDocument } from './user.model';
 import { UserService } from './user.service';
-import {
-  ApolloError,
-  ForbiddenError,
-  UserInputError,
-} from 'apollo-server-express';
+import { ForbiddenError } from 'apollo-server-express';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConnectionArgs } from '../common/dto/connection.args';
@@ -30,7 +25,6 @@ import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { SessionHandler } from 'src/guards/session.handler';
 import { SessionService } from '../session/session.service';
 import { PubSubEngine } from 'graphql-subscriptions';
-import { GeneralUserGuard } from 'src/guards/general.user.guard';
 
 //TODO forgot pw
 @Resolver((of) => User)
@@ -111,30 +105,9 @@ export class UserResolver {
     return user.type;
   }
 
-  @Mutation((returns) => String)
-  async checkUser(@Args('id', { type: () => ID }) id: string) {
-    this.pubSub.publish('testForUser1', { testForUser1: id });
-    this.pubSub.publish('testForUser', { testForUser: id });
-
-    return id;
-  }
-
-  @Subscription((returns) => String, {
-    name: 'testForUser',
-    nullable: true,
-    filter(this: UserResolver, { testForUser }, variables, context) {
-      console.log(testForUser);
-      console.log('context in subscription', context.user);
-      return true;
-    },
-  })
-  async testForUser(@Args('userId', { type: () => ID }) userId: string) {
-    return this.pubSub.asyncIterator('testForUser');
-  }
-
   @Subscription((returns) => UserChannelPayload, {
     filter: (payload, { userId }, context) => {
-      return payload.userChannel.to._id === userId;
+      return payload.userChannel.to._id.toString() === userId.toString();
     },
   })
   @UseGuards(ActivatedUserGuard)

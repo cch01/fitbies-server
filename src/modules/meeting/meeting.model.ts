@@ -4,6 +4,7 @@ import * as mongoose from 'mongoose';
 import { IsDate } from 'class-validator';
 import { User } from '../user/user.model';
 import { Paginated } from 'src/utils/create.paginated.schema';
+import { v4 as uuidv4 } from 'uuid';
 
 export type MeetingDocument = Meeting & mongoose.Document;
 
@@ -15,15 +16,15 @@ export class Participant {
   _id!: string;
 
   @Field({ nullable: true })
-  @Prop()
-  approvedAt?: Date;
+  @Prop({ default: () => new Date() })
+  joinedAt?: Date;
 
   @Field({ nullable: true })
   @Prop()
   leftAt?: Date;
 
   @Field({ nullable: true })
-  @Prop()
+  @Prop({ default: false })
   isLeft?: boolean;
 }
 export const ParticipantSchema = SchemaFactory.createForClass(Participant);
@@ -33,6 +34,10 @@ export const ParticipantSchema = SchemaFactory.createForClass(Participant);
 export class Meeting {
   @Field((type) => ID)
   _id: string;
+
+  @Field({ nullable: true })
+  @Prop({ default: () => uuidv4() })
+  roomId?: string;
 
   @Field((type) => User, { nullable: true })
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true })
@@ -49,18 +54,10 @@ export class Meeting {
   @Prop()
   passCode?: string;
 
-  @Field({ nullable: true })
-  @Prop()
-  meetingInvitationToken?: string;
-
   @IsDate()
   @Field((type) => Date, { nullable: true })
   @Prop({ type: Date, default: null })
   endedAt?: Date;
-
-  @Field({ nullable: true })
-  @Prop({ default: false })
-  needApproval?: boolean;
 }
 
 const MeetingSchema = SchemaFactory.createForClass(Meeting);

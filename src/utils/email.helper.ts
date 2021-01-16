@@ -47,7 +47,7 @@ export default class EmailHelper {
     passCode?: string,
   ): Promise<void> {
     try {
-      const url = `${process.env.SERVER_URI}/reset/${invitationToken}`;
+      const url = `http://${process.env.FRONTEND_URI}/join/${invitationToken}`;
 
       const html = meetingInvitationEmail(initiatorName, url, passCode);
 

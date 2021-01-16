@@ -2,36 +2,41 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ApolloError, ForbiddenError } from 'apollo-server-express';
 import { Model } from 'mongoose';
-import { User } from '../user/user.model';
+import { User, UserCurrentStates, UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
-import { CreateMeetingInput, JoinMeetingInput } from './dto/meeting.input';
-import { MeetingEventsPayload, MeetingEventType } from './dto/meeting.payload';
+import {
+  CreateMeetingInput,
+  InviteMeetingInput,
+  JoinMeetingInput,
+} from './dto/meeting.input';
+import {
+  MeetingEventsPayload,
+  MeetingEventType,
+  MeetingMessage,
+} from './dto/meeting.payload';
 import { Meeting, MeetingDocument } from './meeting.model';
 import * as _ from 'lodash';
+import EmailHelper from 'src/utils/email.helper';
 
 @Injectable()
 export class MeetingService {
   constructor(
     @InjectModel('meeting') private meetingModel: Model<MeetingDocument>,
+    @InjectModel('user') private userModel: Model<UserDocument>,
     private readonly userService: UserService,
   ) {}
 
   async createMeeting({
     initiatorId: initiator,
     passCode,
-    needApproval,
   }: CreateMeetingInput): Promise<Meeting> {
     const newMeeting = new this.meetingModel({
       initiator,
       passCode,
-      needApproval,
-      participants: [{ _id: initiator, approvedAt: new Date() }],
+      participants: [{ _id: initiator }],
     });
 
-    const result = await (await newMeeting.save())
-      .populate('initiator')
-      .execPopulate();
-    return result;
+    return newMeeting.save();
   }
 
   async joinMeeting({
@@ -40,9 +45,7 @@ export class MeetingService {
     passCode,
   }: JoinMeetingInput): Promise<Meeting> {
     //TODO: subscription
-    const meeting = await (
-      await this.meetingModel.findOne({ _id: meetingId })?.populate('initiator')
-    )?.execPopulate();
+    const meeting = await await this.meetingModel.findOne({ _id: meetingId });
 
     if (!meeting || meeting.endedAt) {
       throw new ApolloError('Meeting not found.');
@@ -52,15 +55,13 @@ export class MeetingService {
       throw new ForbiddenError('Wrong pass code.');
     }
 
-    if (meeting.needApproval) {
-      //TODO push to creator for approval
-    }
     let updatedMeeting;
-    const joinedRecord = meeting.participants.find((_p) => _p._id == joinerId);
+    const joinedRecord = meeting.participants.find(
+      (_p) => _p._id.toString() === joinerId,
+    );
 
-    //TODO refactor needed
     if (!joinedRecord) {
-      const newRecord = { _id: joinerId, approvedAt: new Date() };
+      const newRecord = { _id: joinerId };
       meeting.participants.push(newRecord);
       updatedMeeting = await meeting.save();
     } else {
@@ -70,9 +71,12 @@ export class MeetingService {
           participants: { $elemMatch: { _id: joinerId } },
         },
         {
-          $set: { 'participants.$.approvedAt': new Date() },
+          $set: {
+            'participants.$.joinedAt': new Date(),
+            'participants.$.isLeft': false,
+          },
         },
-        { useFindAndModify: true, new: true },
+        { useFindAndModify: true, new: true, upsert: true },
       );
     }
     return updatedMeeting;
@@ -111,7 +115,6 @@ export class MeetingService {
       _id: meetingId,
       participants: { $elemMatch: { _id: userId, isLeft: false } },
     });
-
     if (!meeting) {
       throw new ApolloError(
         'Meeting not found / you are not joining this meeting',
@@ -150,26 +153,75 @@ export class MeetingService {
     return meeting;
   }
 
+  inviteMeetingByEmail(
+    targetEmail: string,
+    nickname: string,
+    meetingId: string,
+  ) {
+    EmailHelper.sendMeetingInvitationEmail(
+      nickname,
+      targetEmail,
+      'Invitation to join a meeting',
+      meetingId,
+    );
+  }
+
+  async inviteMeetingChecking(
+    { userId, meetingId }: InviteMeetingInput,
+    currentUser: User,
+  ): Promise<{
+    targetMeeting: Meeting;
+    targetUser: User;
+  }> {
+    const targetMeeting = await this.meetingModel.findById(meetingId);
+    if (!targetMeeting) {
+      throw new ApolloError('Meeting not found');
+    }
+
+    if (currentUser._id.toString() !== targetMeeting.initiator.toString()) {
+      throw new ForbiddenError('Access denied');
+    }
+    let targetUser;
+    if (userId) {
+      targetUser = await this.userModel.findById(userId);
+      // if (targetUser.status === UserCurrentStates.OFFLINE) {
+      //   throw new ApolloError('User offline');
+      // }
+    }
+    return { targetMeeting, targetUser } as {
+      targetMeeting: Meeting;
+      targetUser: User;
+    };
+  }
+
+  async createMeetingEventsPayload(
+    type: MeetingEventType,
+    from: User,
+    toMeeting: Meeting,
+    message?: MeetingMessage,
+    userToBeKickedOut?: User,
+  ): Promise<MeetingEventsPayload> {
+    return {
+      type,
+      from,
+      toMeeting,
+      message,
+      userToBeKickedOut,
+    };
+  }
+
   async checkMeetingEventsPayload(
     { type }: MeetingEventsPayload,
     { userId, meetingId }: { userId: string; meetingId: string },
     ctx: any,
   ): Promise<boolean> {
     const meeting = await this.meetingModel.findById(meetingId);
-    const isJoinRequest = type === MeetingEventType.JOIN_REQUEST;
-
     if (!meeting) return false;
-
-    const userIsParticipant =
-      meeting.participants.findIndex(
-        (participant) => participant._id === ctx.user._id.toString(),
-      ) > -1;
-
-    if (!!meeting.endedAt || (!userIsParticipant && !isJoinRequest)) {
-      return false;
-    }
-
-    if (isJoinRequest && meeting.initiator !== ctx.user._id.toString()) {
+    console.log('subscribing user', ctx.user._id);
+    const userIsParticipant = meeting.participants.find(
+      (participant) => participant._id.toString() === ctx.user._id.toString(),
+    );
+    if (!userIsParticipant) {
       return false;
     }
 
