@@ -28,11 +28,16 @@ import {
   CreateMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
+  SendMeetingMessageInput,
 } from './dto/meeting.input';
 import { Meeting, MeetingConnection, MeetingDocument } from './meeting.model';
 import { MeetingService } from './meeting.service';
 import { GeneralUserGuard } from 'src/guards/general.user.guard';
-import { MeetingEventsPayload, MeetingEventType } from './dto/meeting.payload';
+import {
+  MeetingEventsPayload,
+  MeetingEventType,
+  MeetingMessage,
+} from './dto/meeting.payload';
 import * as _ from 'lodash';
 import { UserChannelEventType } from '../user/dto/user.payload';
 import { withUnsubscribe } from 'src/utils/withUnsubscribe';
@@ -47,7 +52,7 @@ export class MeetingResolver {
     @InjectModel('meeting')
     private readonly meetingModel: Model<MeetingDocument>,
     @InjectModel('user') private readonly userModel: Model<UserDocument>,
-    @Inject('PUB_SUB') private readonly pubSub: PubSubEngine,
+    @Inject('pubSub') private readonly pubSub: PubSubEngine,
   ) {}
 
   @Mutation((returns) => Meeting, { nullable: true })
@@ -108,7 +113,7 @@ export class MeetingResolver {
     return result;
   }
 
-  @Mutation((returns) => Meeting, { nullable: true })
+  @Mutation((returns) => Meeting)
   async leaveMeeting(
     @Args('meetingId', { type: () => ID }) meetingId: string,
     @CurrentUser() currentUser: User,
@@ -126,6 +131,18 @@ export class MeetingResolver {
       meetingChannel: meetingEventsPayload,
     });
     return result;
+  }
+
+  @Mutation((returns) => MeetingMessage)
+  async sendMeetingMessage(
+    @Args('sendMeetingMessageInput') input: SendMeetingMessageInput,
+    @CurrentUser() currentUser: User,
+  ): Promise<MeetingMessage> {
+    const { userId } = input;
+    if (!(await this.userService.isPermitToWriteUser(currentUser, userId))) {
+      throw new ForbiddenError('Access denied');
+    }
+    return await this.meetingService.sendMeetingMessage(input, currentUser);
   }
 
   @Mutation((returns) => Meeting)
