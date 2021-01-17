@@ -2,12 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
+  AnonymousSignUpInput,
   ResetPasswordInput,
   SignInInput,
   SignUpInput,
   UpdateUserInput,
 } from './dto/user.input';
-import { User, UserDocument } from './user.model';
+import { User, UserDocument, UserType } from './user.model';
 import {
   ApolloError,
   ForbiddenError,
@@ -24,6 +25,8 @@ import {
   UserChannelPayload,
   UserState,
 } from './dto/user.payload';
+import EmailHelper from 'src/utils/email.helper';
+import * as jwt from 'jsonwebtoken';
 @Injectable()
 export class UserService {
   constructor(
@@ -37,12 +40,46 @@ export class UserService {
       signUpInput.password,
       bcrypt.genSaltSync(10),
     );
+    const activationToken = EmailHelper.generateEmailToken({
+      email: signUpInput.email,
+    });
+    EmailHelper.sendActivationEmail(signUpInput.email, activationToken);
+
     const newUser = new this.userModel({
       ...signUpInput,
+      activationToken,
       password: encryptedPw,
-      isActivated: true,
+      isActivated: false,
+      type: 'CLIENT',
     });
+
     return newUser.save();
+  }
+
+  async activateAccount(token: string): Promise<User> {
+    const user = await this.userModel.findOne({ activationToken: token });
+    if (!user) throw new ApolloError('User not found');
+
+    const { email } = jwt.verify(
+      user.activationToken,
+      process.env.EMAIL_TOKEN_SECRET,
+    );
+
+    if (!email || email !== user.email) {
+      throw new ApolloError('Invalid token');
+    }
+
+    user.set('activationToken', null);
+    user.set('activatedAt', new Date());
+    return await user.set('isActivated', true).save();
+  }
+
+  async createAnonymousUser(input: AnonymousSignUpInput): Promise<User> {
+    const user = new this.userModel({
+      ...input,
+      type: UserType.ANONYMOUS_CLIENT,
+    });
+    return await user.save();
   }
 
   async updateUser({ _id, ...rest }: UpdateUserInput) {
@@ -135,6 +172,10 @@ export class UserService {
     return user.type === 'CLIENT';
   }
 
+  isAnonymousUser(user: User): boolean {
+    return user.type === 'ANONYMOUS_CLIENT';
+  }
+
   async resetPassword(
     currentUser: User,
     { email, oldPassword, newPassword, confirmPassword }: ResetPasswordInput,
@@ -171,6 +212,32 @@ export class UserService {
     );
 
     return await targetUser.set('password', newPasswordHash).save();
+  }
+
+  async sendActivationEmail(userId: string, currentUser: User): Promise<User> {
+    const isPermitToWriteUser = await this.isPermitToWriteUser(
+      currentUser,
+      userId,
+    );
+    if (!isPermitToWriteUser) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    const targetUser = await this.userModel.findById(userId);
+    if (!targetUser) {
+      throw new ApolloError('User not found');
+    }
+
+    if (!targetUser.email) {
+      throw new ApolloError('User has not registered');
+    }
+
+    const activationToken = EmailHelper.generateEmailToken({
+      email: targetUser.email,
+    });
+    EmailHelper.sendActivationEmail(targetUser.email, activationToken);
+    await targetUser.set('activationToken', activationToken).save();
+    return targetUser;
   }
 
   async isPermitToWriteUser(

@@ -1,5 +1,5 @@
 const users = require('./data/user-seeds');
-const userTypes = ['CLIENT', 'ADMIN'];
+const userTypes = ['CLIENT', 'ADMIN', 'ANONYMOUS_CLIENT'];
 module.exports = {
   async up(db, client) {
     const session = client.startSession();
@@ -8,7 +8,6 @@ module.exports = {
         await db.createCollection('users', {
           validator: {
             $jsonSchema: {
-              required: ['email', 'password', 'type'],
               properties: {
                 type: {
                   enum: userTypes,
@@ -27,6 +26,9 @@ module.exports = {
                 },
                 isActivated: {
                   bsonType: 'bool',
+                },
+                nickname: {
+                  bsonType: 'string',
                 },
               },
             },
