@@ -208,7 +208,6 @@ export class MeetingService {
       throw new ForbiddenError('Access denied');
     }
 
-    console.log(meeting);
     const isInBlockList = meeting.blockList.some(
       (_id) => _id.toString() === targetUserId.toString(),
     );
@@ -290,12 +289,7 @@ export class MeetingService {
     nickname: string,
     meetingId: string,
   ) {
-    EmailHelper.sendMeetingInvitationEmail(
-      nickname,
-      targetEmail,
-      'Invitation to join a meeting',
-      meetingId,
-    );
+    EmailHelper.sendMeetingInvitationEmail(nickname, targetEmail, meetingId);
   }
 
   async inviteUserToMeeting(

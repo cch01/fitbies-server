@@ -3,17 +3,17 @@ import * as _ from 'lodash';
 import { sendEmail } from './send.email';
 import activationEmail from 'src/email.templates/activation';
 import resetPasswordEmail from 'src/email.templates/resetPw';
-import meetingInvitationEmail from 'src/email.templates/meeting.invatation';
+import meetingInvitationEmail from 'src/email.templates/meeting.invitation';
 
 const tokenExpiresIn = '1d';
 export default class EmailHelper {
   static async sendActivationEmail(
     userEmail: string,
-    subject: string,
     activationToken: string,
+    subject = 'ZOOMED account registration',
   ): Promise<void> {
     try {
-      const url = `${process.env.SERVER_URI}/activation/${activationToken}`;
+      const url = `${process.env.FRONTEND_URI}/activation/${activationToken}`;
 
       const html = activationEmail(userEmail, url);
 
@@ -25,11 +25,11 @@ export default class EmailHelper {
   static async sendResetPasswordEmail(
     userEmail: string,
     userName: string,
-    subject: string,
     resetToken: string,
+    subject = 'Reset your ZOOMED account password',
   ): Promise<void> {
     try {
-      const url = `${process.env.SERVER_URI}/reset/${resetToken}`;
+      const url = `${process.env.FRONTEND_URI}/reset/${resetToken}`;
 
       const html = resetPasswordEmail(userName, url);
 
@@ -42,9 +42,9 @@ export default class EmailHelper {
   static async sendMeetingInvitationEmail(
     initiatorName: string,
     targetEmail: string,
-    subject: string,
     invitationToken: string,
     passCode?: string,
+    subject = 'Invitation to join a ZOOMED meeting',
   ): Promise<void> {
     try {
       const url = `http://${process.env.FRONTEND_URI}/join/${invitationToken}`;
@@ -57,8 +57,8 @@ export default class EmailHelper {
     }
   }
 
-  static generateEmailToken(plainText: string) {
-    return jwt.sign(plainText, process.env.EMAIL_TOKEN_SECRET, {
+  static generateEmailToken(content: any) {
+    return jwt.sign(content, process.env.EMAIL_TOKEN_SECRET, {
       expiresIn: tokenExpiresIn,
     });
   }

@@ -6,6 +6,16 @@ import { Paginated } from 'src/utils/create.paginated.schema';
 
 export type UserDocument = User & Document;
 
+export enum UserType {
+  CLIENT = 'CLIENT',
+  ADMIN = 'ADMIN',
+  ANONYMOUS_CLIENT = 'ANONYMOUS_CLIENT',
+}
+
+registerEnumType(UserType, {
+  name: 'UserType',
+});
+
 @Schema({ collection: 'users', timestamps: true })
 @ObjectType()
 export class User {
@@ -14,31 +24,31 @@ export class User {
 
   @Prop({ required: true })
   @Field({ nullable: true })
-  nickname?: string;
+  nickname: string;
 
-  @Prop({})
+  @Prop()
   @Field({ nullable: true })
   firstName?: string;
 
-  @Prop({})
+  @Prop()
   @Field({ nullable: true })
   lastName?: string;
 
   @IsEmail()
-  @Prop({ unique: true })
+  @Prop()
   @Field({ nullable: true })
   email?: string;
 
-  @Prop({})
+  @Prop()
   password?: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, default: UserType.ANONYMOUS_CLIENT })
   @Field((type) => UserType, { nullable: true })
-  type?: UserType;
+  type: UserType;
 
-  @Prop({ required: false })
+  @Prop()
   @Field((type) => UserCurrentStates, { nullable: true })
-  status: UserCurrentStates;
+  status?: UserCurrentStates;
 
   @Prop()
   resetToken?: string;
@@ -46,13 +56,13 @@ export class User {
   @Prop()
   activationToken?: string;
 
-  @Field({ nullable: true, defaultValue: false })
-  @Prop()
+  @Field({ nullable: true })
+  @Prop({ default: false })
   isActivated?: boolean;
 
   @Field((type) => Date, { nullable: true })
   @Prop()
-  registeredAt?: Date;
+  activatedAt?: Date;
 
   @Field({ nullable: true })
   createdAt?: Date;
@@ -60,15 +70,6 @@ export class User {
   @Field({ nullable: true })
   updatedAt?: Date;
 }
-
-export enum UserType {
-  CLIENT = 'CLIENT',
-  ADMIN = 'ADMIN',
-}
-
-registerEnumType(UserType, {
-  name: 'UserType',
-});
 
 const UserSchema = SchemaFactory.createForClass(User);
 

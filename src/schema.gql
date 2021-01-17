@@ -11,7 +11,7 @@ type User {
   type: UserType
   status: UserCurrentStates
   isActivated: Boolean
-  registeredAt: DateTime
+  activatedAt: DateTime
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -19,6 +19,7 @@ type User {
 enum UserType {
   CLIENT
   ADMIN
+  ANONYMOUS_CLIENT
 }
 
 enum UserCurrentStates {
@@ -164,6 +165,9 @@ enum SortOrder {
 
 type Mutation {
   signUp(signUpInput: SignUpInput!): User
+  activateAccount(token: String!): User
+  resendActivationEmail(userId: ID!): User
+  anonymousSignUp(anonymousSignUpInput: AnonymousSignUpInput!): User!
   signIn(signInInput: SignInInput!): SignInPayload
   signOut: Boolean
   updateUser(updateUserInput: UpdateUserInput!): User
@@ -184,7 +188,10 @@ input SignUpInput {
   email: String!
   password: String!
   nickname: String!
-  type: UserType!
+}
+
+input AnonymousSignUpInput {
+  nickname: String!
 }
 
 input SignInInput {
