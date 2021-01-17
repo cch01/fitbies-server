@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
@@ -6,6 +6,7 @@ import { User, UserDocument } from './user.model';
 import {
   ApolloError,
   ForbiddenError,
+  PubSubEngine,
   UserInputError,
 } from 'apollo-server-express';
 import * as bcrypt from 'bcrypt';
@@ -22,6 +23,7 @@ import {
 export class UserService {
   constructor(
     @InjectModel('user') private userModel: Model<UserDocument>,
+    @Inject('pubSub') private pubSub: PubSubEngine,
     private readonly sessionService: SessionService,
   ) {}
 
@@ -66,20 +68,22 @@ export class UserService {
     return bcrypt.compareSync(password, user.password);
   }
 
-  createUserChannelPayload(
+  createUserEventsAndDispatch(
     to: User,
     eventType: UserChannelEventType,
     personalMessage?: PersonalMessage,
     friendState?: UserState,
     meetingInvitation?: MeetingInvitation,
   ): UserChannelPayload {
-    return {
+    const userEventPayload = {
       to,
       eventType,
       personalMessage,
       friendState,
       meetingInvitation,
     };
+    this.pubSub.publish('userChannel', { userChannel: userEventPayload });
+    return userEventPayload;
   }
 
   async findUser(
@@ -116,6 +120,14 @@ export class UserService {
         if (!user || user._id.toString() != targetUserId) return false;
     }
     return true;
+  }
+
+  isAdmin(user: User): boolean {
+    return user.type === 'ADMIN';
+  }
+
+  isClient(user: User): boolean {
+    return user.type === 'CLIENT';
   }
 
   async isPermitToWriteUser(

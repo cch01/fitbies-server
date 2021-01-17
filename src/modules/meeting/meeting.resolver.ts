@@ -33,16 +33,9 @@ import {
 import { Meeting, MeetingConnection, MeetingDocument } from './meeting.model';
 import { MeetingService } from './meeting.service';
 import { GeneralUserGuard } from 'src/guards/general.user.guard';
-import {
-  MeetingEventsPayload,
-  MeetingEventType,
-  MeetingMessage,
-} from './dto/meeting.payload';
-import * as _ from 'lodash';
-import { UserChannelEventType } from '../user/dto/user.payload';
+import { MeetingEventsPayload, MeetingMessage } from './dto/meeting.payload';
 import { withUnsubscribe } from 'src/utils/withUnsubscribe';
 
-//TODO add pubsub dispatching on meeting resolvers / services
 @Resolver((of) => Meeting)
 @UseGuards(SessionHandler)
 export class MeetingResolver {
@@ -77,20 +70,17 @@ export class MeetingResolver {
     @Args('joinMeetingInput') joinMeetingInput: JoinMeetingInput,
     @CurrentUser() currentUser: User,
   ) {
-    if (currentUser._id.toString() != joinMeetingInput.joinerId) {
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
+      currentUser,
+      joinMeetingInput.joinerId,
+    );
+    if (!isPermitToWriteUser) {
       throw new ForbiddenError('Access denied');
     }
     const joinedResult = await this.meetingService.joinMeeting(
       joinMeetingInput,
-    );
-    const meetingEventsPayload = await this.meetingService.createMeetingEventsPayload(
-      MeetingEventType.USER_JOINED,
       currentUser,
-      joinedResult,
     );
-    this.pubSub.publish('meetingChannel', {
-      meetingChannel: meetingEventsPayload,
-    });
 
     return joinedResult;
   }
@@ -99,38 +89,34 @@ export class MeetingResolver {
   @UseGuards(ActivatedUserGuard)
   async endMeeting(
     @Args('meetingId', { type: () => ID }) meetingId: string,
+    @Args('userId', { type: () => ID }) userId: string,
     @CurrentUser() currentUser: User,
   ) {
-    const result = await this.meetingService.endMeeting(meetingId, currentUser);
-    const meetingEventsPayload = await this.meetingService.createMeetingEventsPayload(
-      MeetingEventType.END_MEETING,
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
       currentUser,
-      result,
+      userId,
     );
-    this.pubSub.publish('meetingChannel', {
-      meetingChannel: meetingEventsPayload,
-    });
-    return result;
+    if (!isPermitToWriteUser) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    return await this.meetingService.endMeeting(meetingId, userId, currentUser);
   }
 
   @Mutation((returns) => Meeting)
   async leaveMeeting(
     @Args('meetingId', { type: () => ID }) meetingId: string,
+    @Args('userId', { type: () => ID }) userId: string,
     @CurrentUser() currentUser: User,
   ) {
-    const result = await this.meetingService.leaveMeeting(
+    if (!(await this.userService.isPermitToWriteUser(currentUser, userId))) {
+      throw new ForbiddenError('Access denied');
+    }
+    return await this.meetingService.leaveMeeting(
       meetingId,
-      currentUser._id,
-    );
-    const meetingEventsPayload = await this.meetingService.createMeetingEventsPayload(
-      MeetingEventType.LEAVE_MEETING,
+      userId,
       currentUser,
-      result,
     );
-    this.pubSub.publish('meetingChannel', {
-      meetingChannel: meetingEventsPayload,
-    });
-    return result;
   }
 
   @Mutation((returns) => MeetingMessage)
@@ -154,30 +140,10 @@ export class MeetingResolver {
     if (!(email || userId)) {
       throw new UserInputError('At least email or userId must be specified');
     }
-    const result = await this.meetingService.inviteMeetingChecking(
+    return await this.meetingService.inviteUserToMeeting(
       { meetingId, email, userId },
       currentUser,
     );
-
-    email &&
-      this.meetingService.inviteMeetingByEmail(
-        email,
-        currentUser.nickname,
-        meetingId,
-      );
-
-    if (userId) {
-      const meetingEventsPayload = this.userService.createUserChannelPayload(
-        result.targetUser,
-        UserChannelEventType.MEETING_INVITATION,
-        undefined,
-        undefined,
-        { meetingId, inviter: currentUser },
-      );
-      this.pubSub.publish('userChannel', { userChannel: meetingEventsPayload });
-    }
-
-    return result.targetMeeting;
   }
 
   @Query((returns) => Meeting, { nullable: true })
@@ -201,7 +167,7 @@ export class MeetingResolver {
       currentUser,
       initiatorId,
     );
-    if ((!initiatorId && currentUser.type != 'ADMIN') || !isPermitToReadUser) {
+    if (!initiatorId && !isPermitToReadUser) {
       throw new ForbiddenError('Access denied');
     }
     return await applyConnectionArgs(connectionArgs, this.meetingModel, {
@@ -232,7 +198,7 @@ export class MeetingResolver {
     @Args('meetingId', { type: () => ID }) meetingId: string,
     @CurrentUser() currentUser: User,
   ) {
-    if (userId != currentUser._id) {
+    if (!(await this.userService.isPermitToReadUser(currentUser, userId))) {
       throw new ForbiddenError('Access denied');
     }
     const meeting = await this.meetingModel.findById(meetingId);
@@ -241,34 +207,36 @@ export class MeetingResolver {
         !participant.isLeft &&
         participant._id.toString() === currentUser._id.toString(),
     );
-    if (!meeting || meeting.endedAt || !isParticipant) {
+    if (meeting?.endedAt || !isParticipant) {
       throw new ApolloError('Meeting not found / has already ended');
     }
     return withUnsubscribe(
       this.pubSub.asyncIterator('meetingChannel'),
       async () => {
         console.log(`${currentUser.nickname} leaved`);
-        await this.leaveMeeting(meetingId, currentUser);
+        await this.leaveMeeting(meetingId, userId, currentUser);
       },
     );
   }
+
   @ResolveField((returns) => String)
   async passCode(
     @Parent() meeting: Meeting,
     @CurrentUser() currentUser: User,
   ): Promise<string> {
-    if (currentUser._id.toString() !== meeting.initiator.toString()) {
+    const isPermitToReadUser = await this.userService.isPermitToReadUser(
+      currentUser,
+      meeting.initiator,
+    );
+
+    if (!isPermitToReadUser) {
       throw new ForbiddenError('Access denied');
     }
     return meeting.passCode;
   }
 
   @ResolveField((returns) => String)
-  async initiator(
-    @Parent() meeting: Meeting,
-    @CurrentUser() currentUser: User,
-  ): Promise<User> {
-    console.log(meeting);
+  async initiator(@Parent() meeting: Meeting): Promise<User> {
     return this.userModel.findById(meeting.initiator);
   }
 
@@ -281,12 +249,10 @@ export class MeetingResolver {
       (participant) =>
         participant._id.toString() === currentUser._id.toString(),
     );
-    if (!isUserJoined) {
+    if (!isUserJoined && !this.userService.isAdmin(currentUser)) {
       throw new ForbiddenError('Access denied');
     }
 
     return meeting.roomId;
   }
-
-  //TODO kick
 }
