@@ -6,7 +6,7 @@ import {
   PubSubEngine,
 } from 'apollo-server-express';
 import { Model } from 'mongoose';
-import { User, UserCurrentStates, UserDocument } from '../user/user.model';
+import { User, UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
 import {
   CreateMeetingInput,
@@ -22,6 +22,7 @@ import {
 import { Meeting, MeetingDocument } from './meeting.model';
 import * as _ from 'lodash';
 import EmailHelper from 'src/utils/email.helper';
+import { UserChannelEventType } from '../user/dto/user.payload';
 
 @Injectable()
 export class MeetingService {
@@ -45,14 +46,13 @@ export class MeetingService {
     return newMeeting.save();
   }
 
-  async joinMeeting({
-    meetingId,
-    joinerId,
-    passCode,
-  }: JoinMeetingInput): Promise<Meeting> {
-    //TODO: subscription
+  async joinMeeting(
+    { meetingId, joinerId, passCode }: JoinMeetingInput,
+    currentUser: User,
+  ): Promise<Meeting> {
     const meeting = await await this.meetingModel.findOne({ _id: meetingId });
 
+    console.log(meeting);
     if (!meeting || meeting.endedAt) {
       throw new ApolloError('Meeting not found.');
     }
@@ -85,22 +85,30 @@ export class MeetingService {
         { useFindAndModify: true, new: true },
       );
     }
+
+    await this.createMeetingEventsAndDispatch(
+      MeetingEventType.USER_JOINED,
+      currentUser,
+      updatedMeeting,
+    );
+
     return updatedMeeting;
   }
 
-  async endMeeting(meetingId: string, currentUser: User): Promise<Meeting> {
-    const meeting = await this.meetingModel.findById(meetingId);
+  async endMeeting(
+    meetingId: string,
+    userId: string,
+    currentUser: User,
+  ): Promise<Meeting> {
+    const meeting = await this.meetingModel.findOne({
+      _id: meetingId,
+      initiator: userId,
+    });
+
     if (!meeting) {
       throw new ApolloError('meeting not found');
     }
-    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
-      currentUser,
-      meeting.initiator,
-    );
 
-    if (!isPermitToWriteUser) {
-      throw new ForbiddenError('Access denied');
-    }
     if (meeting.endedAt) {
       throw new ApolloError('meeting has been ended already');
     }
@@ -108,15 +116,27 @@ export class MeetingService {
     const updatedParticipants = meeting.toObject().participants.map((_p) => ({
       ..._p,
       isLeft: true,
-      leftAt: _p.isLeft ? _p.leftAt : new Date(),
+      leftAt: _p.leftAt || new Date(),
     }));
 
-    return meeting
+    meeting
       .set({ endedAt: new Date(), participants: updatedParticipants })
       .save();
+
+    await this.createMeetingEventsAndDispatch(
+      MeetingEventType.END_MEETING,
+      currentUser,
+      meeting,
+    );
+
+    return meeting;
   }
 
-  async leaveMeeting(meetingId: string, userId: string): Promise<Meeting> {
+  async leaveMeeting(
+    meetingId: string,
+    userId: string,
+    currentUser: User,
+  ): Promise<Meeting> {
     const meeting = await this.meetingModel.findOne({
       _id: meetingId,
       participants: { $elemMatch: { _id: userId, isLeft: false } },
@@ -141,6 +161,18 @@ export class MeetingService {
       { useFindAndModify: true, new: true },
     );
 
+    const usersInMeeting = updatedMeeting.participants.some((p) => !p.isLeft);
+
+    if (!usersInMeeting) {
+      await updatedMeeting.set('endedAt', new Date()).save();
+    }
+
+    await this.createMeetingEventsAndDispatch(
+      MeetingEventType.LEAVE_MEETING,
+      currentUser,
+      updatedMeeting,
+    );
+
     return updatedMeeting;
   }
 
@@ -149,7 +181,7 @@ export class MeetingService {
 
     const isPermitToReadUser = await this.userService.isPermitToReadUser(
       currentUser,
-      meeting._id,
+      meeting.initiator,
     );
 
     if (!isPermitToReadUser) {
@@ -172,21 +204,23 @@ export class MeetingService {
     );
   }
 
-  async inviteMeetingChecking(
-    { userId, meetingId }: InviteMeetingInput,
+  async inviteUserToMeeting(
+    { userId, meetingId, email }: InviteMeetingInput,
     currentUser: User,
-  ): Promise<{
-    targetMeeting: Meeting;
-    targetUser: User;
-  }> {
+  ): Promise<Meeting> {
     const targetMeeting = await this.meetingModel.findById(meetingId);
     if (!targetMeeting || targetMeeting.endedAt) {
       throw new ApolloError('Meeting not found');
     }
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
+      currentUser,
+      targetMeeting.initiator,
+    );
 
-    if (currentUser._id.toString() !== targetMeeting.initiator.toString()) {
+    if (!isPermitToWriteUser) {
       throw new ForbiddenError('Access denied');
     }
+
     let targetUser;
     if (userId) {
       targetUser = await this.userModel.findById(userId);
@@ -194,26 +228,40 @@ export class MeetingService {
       //   throw new ApolloError('User offline');
       // }
     }
-    return { targetMeeting, targetUser } as {
-      targetMeeting: Meeting;
-      targetUser: User;
-    };
+
+    email && this.inviteMeetingByEmail(email, currentUser.nickname, meetingId);
+
+    if (userId) {
+      await this.userService.createUserEventsAndDispatch(
+        targetUser,
+        UserChannelEventType.MEETING_INVITATION,
+        undefined,
+        undefined,
+        { meetingId, inviter: currentUser },
+      );
+    }
+
+    return targetMeeting;
   }
 
-  async createMeetingEventsPayload(
+  async createMeetingEventsAndDispatch(
     type: MeetingEventType,
     from: User,
     toMeeting: Meeting,
     message?: MeetingMessage,
     userToBeKickedOut?: User,
   ): Promise<MeetingEventsPayload> {
-    return {
+    const meetingEventsPayload = {
       type,
       from,
       toMeeting,
       message,
       userToBeKickedOut,
     };
+    this.pubSub.publish('meetingChannel', {
+      meetingChannel: meetingEventsPayload,
+    });
+    return meetingEventsPayload;
   }
 
   async checkMeetingEventsPayload(
@@ -223,7 +271,7 @@ export class MeetingService {
   ): Promise<boolean> {
     const meeting = await this.meetingModel.findOne({
       _id: meetingId,
-      participants: { $elemMatch: { _id: ctx.user._id, isLeft: false } },
+      participants: { $elemMatch: { _id: ctx.user._id } },
     });
     if (!meeting) return false;
     console.log('subscribing user', ctx.user._id);
@@ -246,16 +294,13 @@ export class MeetingService {
       content,
       sentAt: new Date(),
     };
-    const meetingEventsPayload = await this.createMeetingEventsPayload(
+
+    await this.createMeetingEventsAndDispatch(
       MeetingEventType.MESSAGE,
       currentUser,
       meeting,
       meetingMsg,
     );
-
-    this.pubSub.publish('meetingChannel', {
-      meetingChannel: meetingEventsPayload,
-    });
 
     return meetingMsg;
   }
