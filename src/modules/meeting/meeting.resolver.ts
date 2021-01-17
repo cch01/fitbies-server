@@ -25,6 +25,7 @@ import { ConnectionArgs } from '../common/dto/connection.args';
 import { User, UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
 import {
+  BlockUserInput,
   CreateMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
@@ -66,6 +67,7 @@ export class MeetingResolver {
   }
 
   @Mutation((returns) => Meeting, { nullable: true })
+  @UseGuards(GeneralUserGuard)
   async joinMeeting(
     @Args('joinMeetingInput') joinMeetingInput: JoinMeetingInput,
     @CurrentUser() currentUser: User,
@@ -104,6 +106,7 @@ export class MeetingResolver {
   }
 
   @Mutation((returns) => Meeting)
+  @UseGuards(GeneralUserGuard)
   async leaveMeeting(
     @Args('meetingId', { type: () => ID }) meetingId: string,
     @Args('userId', { type: () => ID }) userId: string,
@@ -119,7 +122,34 @@ export class MeetingResolver {
     );
   }
 
+  @Mutation((returns) => Meeting)
+  @UseGuards(ActivatedUserGuard)
+  async blockMeetingUser(
+    @Args('blockUserInput')
+    blockUserInput: BlockUserInput,
+    @CurrentUser() currentUser: User,
+  ) {
+    return await this.meetingService.blockMeetingUser(
+      blockUserInput,
+      currentUser,
+    );
+  }
+
+  @Mutation((returns) => Meeting)
+  @UseGuards(ActivatedUserGuard)
+  async unblockMeetingUser(
+    @Args('blockUserInput')
+    blockUserInput: BlockUserInput,
+    @CurrentUser() currentUser: User,
+  ) {
+    return await this.meetingService.unblockMeetingUser(
+      blockUserInput,
+      currentUser,
+    );
+  }
+
   @Mutation((returns) => MeetingMessage)
+  @UseGuards(GeneralUserGuard)
   async sendMeetingMessage(
     @Args('sendMeetingMessageInput') input: SendMeetingMessageInput,
     @CurrentUser() currentUser: User,
@@ -132,6 +162,7 @@ export class MeetingResolver {
   }
 
   @Mutation((returns) => Meeting)
+  @UseGuards(ActivatedUserGuard)
   async inviteMeeting(
     @Args('inviteMeetingInput')
     { meetingId, email, userId }: InviteMeetingInput,
@@ -147,6 +178,7 @@ export class MeetingResolver {
   }
 
   @Query((returns) => Meeting, { nullable: true })
+  @UseGuards(GeneralUserGuard)
   async meeting(
     @Args('meetingId', { type: () => ID }) meetingId: string,
     @CurrentUser() currentUser: User,
@@ -220,6 +252,7 @@ export class MeetingResolver {
   }
 
   @ResolveField((returns) => String)
+  @UseGuards(ActivatedUserGuard)
   async passCode(
     @Parent() meeting: Meeting,
     @CurrentUser() currentUser: User,
@@ -236,11 +269,30 @@ export class MeetingResolver {
   }
 
   @ResolveField((returns) => String)
+  @UseGuards(GeneralUserGuard)
   async initiator(@Parent() meeting: Meeting): Promise<User> {
     return this.userModel.findById(meeting.initiator);
   }
 
   @ResolveField((returns) => String)
+  @UseGuards(ActivatedUserGuard)
+  async blockList(
+    @Parent() meeting: Meeting,
+    @CurrentUser() currentUser: User,
+  ): Promise<string[]> {
+    const isPermitToReadUser = await this.userService.isPermitToReadUser(
+      currentUser,
+      meeting.initiator,
+    );
+
+    if (!isPermitToReadUser) {
+      throw new ForbiddenError('Access denied');
+    }
+    return meeting.blockList;
+  }
+
+  @ResolveField((returns) => String)
+  @UseGuards(GeneralUserGuard)
   async roomId(
     @Parent() meeting: Meeting,
     @CurrentUser() currentUser: User,

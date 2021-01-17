@@ -81,7 +81,9 @@ export class UserResolver {
     this.sessionService.setAccessTokenToResponseHeader(signInResult.token, ctx);
     return signInResult;
   }
+
   @Mutation((returns) => Boolean, { nullable: true })
+  @UseGuards(ActivatedUserGuard)
   async signOut(@Context() ctx) {
     ctx.user && (await this.sessionService.signOut(ctx.token));
     return true;
@@ -94,6 +96,7 @@ export class UserResolver {
   }
 
   @ResolveField((returns) => String)
+  @UseGuards(ActivatedUserGuard)
   async type(@Parent() user: User, @CurrentUser() currentUser: User) {
     const isPermitToReadUser = await this.userService.isPermitToReadUser(
       currentUser,

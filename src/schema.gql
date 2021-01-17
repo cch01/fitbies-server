@@ -96,6 +96,7 @@ type Meeting {
   roomId: String
   initiator: User
   participants: [Participant!]
+  blockList: [ID!]
   passCode: String
   endedAt: DateTime
 }
@@ -132,7 +133,7 @@ type MeetingEventsPayload {
 enum MeetingEventType {
   USER_JOINED
   MESSAGE
-  KICK_USER
+  BLOCK_USER
   END_MEETING
   LEAVE_MEETING
 }
@@ -170,6 +171,8 @@ type Mutation {
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
   endMeeting(userId: ID!, meetingId: ID!): Meeting
   leaveMeeting(userId: ID!, meetingId: ID!): Meeting!
+  blockMeetingUser(blockUserInput: BlockUserInput!): Meeting!
+  unblockMeetingUser(blockUserInput: BlockUserInput!): Meeting!
   sendMeetingMessage(sendMeetingMessageInput: SendMeetingMessageInput!): MeetingMessage!
   inviteMeeting(inviteMeetingInput: InviteMeetingInput!): Meeting!
 }
@@ -204,6 +207,12 @@ input JoinMeetingInput {
   meetingId: ID!
   joinerId: ID!
   passCode: String
+}
+
+input BlockUserInput {
+  meetingId: ID!
+  targetUserId: ID!
+  initiatorId: ID!
 }
 
 input SendMeetingMessageInput {

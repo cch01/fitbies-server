@@ -9,6 +9,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
 import {
+  BlockUserInput,
   CreateMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
@@ -52,9 +53,16 @@ export class MeetingService {
   ): Promise<Meeting> {
     const meeting = await await this.meetingModel.findOne({ _id: meetingId });
 
-    console.log(meeting);
     if (!meeting || meeting.endedAt) {
       throw new ApolloError('Meeting not found.');
+    }
+
+    const isBlocked = meeting.blockList.some(
+      (_id) => _id.toString() === joinerId.toString(),
+    );
+
+    if (isBlocked) {
+      throw new ForbiddenError('You have been blocked in this meeting');
     }
 
     if (meeting.passCode && meeting.passCode !== passCode) {
@@ -176,18 +184,104 @@ export class MeetingService {
     return updatedMeeting;
   }
 
-  async meeting(meetingId: string, currentUser: User): Promise<Meeting> {
-    const meeting = await this.meetingModel.findOne({ _id: meetingId });
+  async blockMeetingUser(
+    { initiatorId, meetingId, targetUserId }: BlockUserInput,
+    currentUser: User,
+  ): Promise<Meeting> {
+    const meeting = await this.meetingModel.findOne({
+      initiator: initiatorId,
+      _id: meetingId,
+    });
 
-    const isPermitToReadUser = await this.userService.isPermitToReadUser(
+    const targetUser = await this.userModel.findById(targetUserId);
+
+    if (!targetUser) {
+      throw new ApolloError('Target user not found');
+    }
+
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
       currentUser,
       meeting.initiator,
     );
 
-    if (!isPermitToReadUser) {
+    if (!isPermitToWriteUser) {
       throw new ForbiddenError('Access denied');
     }
 
+    console.log(meeting);
+    const isInBlockList = meeting.blockList.some(
+      (_id) => _id.toString() === targetUserId.toString(),
+    );
+
+    if (isInBlockList) {
+      throw new ApolloError('User already in block list');
+    }
+    const targetIndex = meeting.participants.findIndex(
+      (p) => p._id.toString() === targetUserId.toString() && !p.isLeft,
+    );
+
+    if (targetIndex > -1) meeting.participants[targetIndex].isLeft = true;
+
+    await this.createMeetingEventsAndDispatch(
+      MeetingEventType.BLOCK_USER,
+      currentUser,
+      meeting,
+      null,
+      targetUser,
+    );
+
+    meeting.blockList.push(targetUserId);
+    return await meeting.save();
+  }
+
+  async unblockMeetingUser(
+    { initiatorId, meetingId, targetUserId }: BlockUserInput,
+    currentUser: User,
+  ): Promise<Meeting> {
+    const meeting = await this.meetingModel.findOne({
+      initiator: initiatorId,
+      _id: meetingId,
+    });
+
+    const targetUser = await this.userModel.findById(targetUserId);
+
+    if (!targetUser) {
+      throw new ApolloError('Target user not found');
+    }
+
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
+      currentUser,
+      meeting.initiator,
+    );
+
+    if (!isPermitToWriteUser) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    const targetUserIndex = meeting.blockList.findIndex(
+      (_id) => _id.toString() === targetUserId.toString(),
+    );
+
+    if (targetUserIndex < 0) {
+      throw new ApolloError('User is not in block list');
+    }
+
+    meeting.blockList.splice(targetUserIndex, 1);
+    console.log(meeting.blockList);
+
+    return await meeting.save();
+  }
+
+  async meeting(meetingId: string, currentUser: User): Promise<Meeting> {
+    const meeting = await this.meetingModel.findOne({ _id: meetingId });
+    if (meeting.endedAt) {
+      const isParticipant = meeting.participants.some(
+        (p) => p._id.toString() === currentUser._id.toString(),
+      );
+      if (!isParticipant && !this.userService.isAdmin(currentUser)) {
+        throw new ForbiddenError('Access denied');
+      }
+    }
     return meeting;
   }
 
