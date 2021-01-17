@@ -178,16 +178,14 @@ export class MeetingService {
 
   async meeting(meetingId: string, currentUser: User): Promise<Meeting> {
     const meeting = await this.meetingModel.findOne({ _id: meetingId });
-
-    const isPermitToReadUser = await this.userService.isPermitToReadUser(
-      currentUser,
-      meeting.initiator,
-    );
-
-    if (!isPermitToReadUser) {
-      throw new ForbiddenError('Access denied');
+    if (meeting.endedAt) {
+      const isParticipant = meeting.participants.some(
+        (p) => p._id.toString() === currentUser._id.toString(),
+      );
+      if (!isParticipant && !this.userService.isAdmin(currentUser)) {
+        throw new ForbiddenError('Access denied');
+      }
     }
-
     return meeting;
   }
 

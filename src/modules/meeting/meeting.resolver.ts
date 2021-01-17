@@ -66,6 +66,7 @@ export class MeetingResolver {
   }
 
   @Mutation((returns) => Meeting, { nullable: true })
+  @UseGuards(GeneralUserGuard)
   async joinMeeting(
     @Args('joinMeetingInput') joinMeetingInput: JoinMeetingInput,
     @CurrentUser() currentUser: User,
@@ -104,6 +105,7 @@ export class MeetingResolver {
   }
 
   @Mutation((returns) => Meeting)
+  @UseGuards(GeneralUserGuard)
   async leaveMeeting(
     @Args('meetingId', { type: () => ID }) meetingId: string,
     @Args('userId', { type: () => ID }) userId: string,
@@ -119,7 +121,24 @@ export class MeetingResolver {
     );
   }
 
+  @Mutation((returns) => Meeting)
+  @UseGuards(ActivatedUserGuard)
+  async kickUser(
+    @Args('meetingId', { type: () => ID }) meetingId: string,
+    @Args('userId', { type: () => ID }) userId: string,
+    @CurrentUser() currentUser: User,
+  ) {
+    if (!(await this.userService.isPermitToWriteUser(currentUser, userId))) {
+      throw new ForbiddenError('Access denied');
+    }
+    return await this.meetingService.leaveMeeting(
+      meetingId,
+      userId,
+      currentUser,
+    );
+  }
   @Mutation((returns) => MeetingMessage)
+  @UseGuards(GeneralUserGuard)
   async sendMeetingMessage(
     @Args('sendMeetingMessageInput') input: SendMeetingMessageInput,
     @CurrentUser() currentUser: User,
@@ -132,6 +151,7 @@ export class MeetingResolver {
   }
 
   @Mutation((returns) => Meeting)
+  @UseGuards(ActivatedUserGuard)
   async inviteMeeting(
     @Args('inviteMeetingInput')
     { meetingId, email, userId }: InviteMeetingInput,
@@ -147,6 +167,7 @@ export class MeetingResolver {
   }
 
   @Query((returns) => Meeting, { nullable: true })
+  @UseGuards(GeneralUserGuard)
   async meeting(
     @Args('meetingId', { type: () => ID }) meetingId: string,
     @CurrentUser() currentUser: User,
@@ -220,6 +241,7 @@ export class MeetingResolver {
   }
 
   @ResolveField((returns) => String)
+  @UseGuards(ActivatedUserGuard)
   async passCode(
     @Parent() meeting: Meeting,
     @CurrentUser() currentUser: User,
@@ -236,11 +258,13 @@ export class MeetingResolver {
   }
 
   @ResolveField((returns) => String)
+  @UseGuards(GeneralUserGuard)
   async initiator(@Parent() meeting: Meeting): Promise<User> {
     return this.userModel.findById(meeting.initiator);
   }
 
   @ResolveField((returns) => String)
+  @UseGuards(GeneralUserGuard)
   async roomId(
     @Parent() meeting: Meeting,
     @CurrentUser() currentUser: User,

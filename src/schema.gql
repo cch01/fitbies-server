@@ -170,6 +170,7 @@ type Mutation {
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
   endMeeting(userId: ID!, meetingId: ID!): Meeting
   leaveMeeting(userId: ID!, meetingId: ID!): Meeting!
+  kickUser(userId: ID!, meetingId: ID!): Meeting!
   sendMeetingMessage(sendMeetingMessageInput: SendMeetingMessageInput!): MeetingMessage!
   inviteMeeting(inviteMeetingInput: InviteMeetingInput!): Meeting!
 }
