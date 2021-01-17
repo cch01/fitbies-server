@@ -52,9 +52,16 @@ export class MeetingService {
   ): Promise<Meeting> {
     const meeting = await await this.meetingModel.findOne({ _id: meetingId });
 
-    console.log(meeting);
     if (!meeting || meeting.endedAt) {
       throw new ApolloError('Meeting not found.');
+    }
+
+    const isBlocked = meeting.blockList.some(
+      (_id) => _id.toString() === joinerId.toString(),
+    );
+
+    if (isBlocked) {
+      throw new ForbiddenError('You have been blocked in this meeting');
     }
 
     if (meeting.passCode && meeting.passCode !== passCode) {
@@ -174,6 +181,57 @@ export class MeetingService {
     );
 
     return updatedMeeting;
+  }
+
+  async blockMeetingUser(
+    meetingId: string,
+    targetUserId: string,
+    initiatorId: string,
+    currentUser: User,
+  ): Promise<Meeting> {
+    const meeting = await this.meetingModel.findOne({
+      initiator: initiatorId,
+      _id: meetingId,
+    });
+
+    const targetUser = await this.userModel.findById(targetUserId);
+
+    if (!targetUser) {
+      throw new ApolloError('Target user not found');
+    }
+
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
+      currentUser,
+      meeting.initiator,
+    );
+
+    if (!isPermitToWriteUser) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    const isInBlockList = meeting.blockList.some(
+      (_id) => _id.toString() === targetUserId.toString(),
+    );
+
+    if (isInBlockList) {
+      throw new ApolloError('User already in block list');
+    }
+    const targetIndex = meeting.participants.findIndex(
+      (p) => p._id.toString() === targetUserId.toString() && !p.isLeft,
+    );
+
+    if (targetIndex > -1) meeting.participants[targetIndex].isLeft = true;
+
+    await this.createMeetingEventsAndDispatch(
+      MeetingEventType.BLOCK_USER,
+      currentUser,
+      meeting,
+      null,
+      targetUser,
+    );
+
+    meeting.blockList.push(targetUserId);
+    return await meeting.save();
   }
 
   async meeting(meetingId: string, currentUser: User): Promise<Meeting> {

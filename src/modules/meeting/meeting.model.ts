@@ -50,6 +50,13 @@ export class Meeting {
   })
   participants?: Participant[];
 
+  @Prop({
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: 'users',
+    default: [],
+  })
+  blockList?: string[];
+
   @Field((type) => String, { nullable: true })
   @Prop()
   passCode?: string;

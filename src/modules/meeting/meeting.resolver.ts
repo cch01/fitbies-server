@@ -123,20 +123,20 @@ export class MeetingResolver {
 
   @Mutation((returns) => Meeting)
   @UseGuards(ActivatedUserGuard)
-  async kickUser(
+  async blockMeetingUser(
     @Args('meetingId', { type: () => ID }) meetingId: string,
-    @Args('userId', { type: () => ID }) userId: string,
+    @Args('targetUserId', { type: () => ID }) targetUserId: string,
+    @Args('initiatorId', { type: () => ID }) initiatorId: string,
     @CurrentUser() currentUser: User,
   ) {
-    if (!(await this.userService.isPermitToWriteUser(currentUser, userId))) {
-      throw new ForbiddenError('Access denied');
-    }
-    return await this.meetingService.leaveMeeting(
+    return await this.meetingService.blockMeetingUser(
       meetingId,
-      userId,
+      targetUserId,
+      initiatorId,
       currentUser,
     );
   }
+
   @Mutation((returns) => MeetingMessage)
   @UseGuards(GeneralUserGuard)
   async sendMeetingMessage(

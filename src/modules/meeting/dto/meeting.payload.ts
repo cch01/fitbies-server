@@ -5,7 +5,7 @@ import { Meeting } from '../meeting.model';
 export enum MeetingEventType {
   USER_JOINED = 'USER_JOINED',
   MESSAGE = 'MESSAGE',
-  KICK_USER = 'KICK_USER',
+  BLOCK_USER = 'BLOCK_USER',
   END_MEETING = 'END_MEETING',
   LEAVE_MEETING = 'LEAVE_MEETING',
 }
