@@ -45,3 +45,15 @@ export class SendMeetingMessageInput {
   @Field((type) => ID)
   meetingId: string;
 }
+
+@InputType()
+export class BlockUserInput {
+  @Field((type) => ID)
+  meetingId: string;
+
+  @Field((type) => ID)
+  targetUserId: string;
+
+  @Field((type) => ID)
+  initiatorId: string;
+}

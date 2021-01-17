@@ -25,6 +25,7 @@ import { ConnectionArgs } from '../common/dto/connection.args';
 import { User, UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
 import {
+  BlockUserInput,
   CreateMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
@@ -124,15 +125,25 @@ export class MeetingResolver {
   @Mutation((returns) => Meeting)
   @UseGuards(ActivatedUserGuard)
   async blockMeetingUser(
-    @Args('meetingId', { type: () => ID }) meetingId: string,
-    @Args('targetUserId', { type: () => ID }) targetUserId: string,
-    @Args('initiatorId', { type: () => ID }) initiatorId: string,
+    @Args('blockUserInput')
+    blockUserInput: BlockUserInput,
     @CurrentUser() currentUser: User,
   ) {
     return await this.meetingService.blockMeetingUser(
-      meetingId,
-      targetUserId,
-      initiatorId,
+      blockUserInput,
+      currentUser,
+    );
+  }
+
+  @Mutation((returns) => Meeting)
+  @UseGuards(ActivatedUserGuard)
+  async unblockMeetingUser(
+    @Args('blockUserInput')
+    blockUserInput: BlockUserInput,
+    @CurrentUser() currentUser: User,
+  ) {
+    return await this.meetingService.unblockMeetingUser(
+      blockUserInput,
       currentUser,
     );
   }
@@ -261,6 +272,23 @@ export class MeetingResolver {
   @UseGuards(GeneralUserGuard)
   async initiator(@Parent() meeting: Meeting): Promise<User> {
     return this.userModel.findById(meeting.initiator);
+  }
+
+  @ResolveField((returns) => String)
+  @UseGuards(ActivatedUserGuard)
+  async blockList(
+    @Parent() meeting: Meeting,
+    @CurrentUser() currentUser: User,
+  ): Promise<string[]> {
+    const isPermitToReadUser = await this.userService.isPermitToReadUser(
+      currentUser,
+      meeting.initiator,
+    );
+
+    if (!isPermitToReadUser) {
+      throw new ForbiddenError('Access denied');
+    }
+    return meeting.blockList;
   }
 
   @ResolveField((returns) => String)

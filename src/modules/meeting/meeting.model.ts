@@ -50,8 +50,9 @@ export class Meeting {
   })
   participants?: Participant[];
 
+  @Field((type) => [ID], { nullable: true })
   @Prop({
-    type: mongoose.SchemaTypes.ObjectId,
+    type: [mongoose.SchemaTypes.ObjectId],
     ref: 'users',
     default: [],
   })

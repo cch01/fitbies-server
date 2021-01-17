@@ -9,6 +9,7 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
 import {
+  BlockUserInput,
   CreateMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
@@ -184,9 +185,7 @@ export class MeetingService {
   }
 
   async blockMeetingUser(
-    meetingId: string,
-    targetUserId: string,
-    initiatorId: string,
+    { initiatorId, meetingId, targetUserId }: BlockUserInput,
     currentUser: User,
   ): Promise<Meeting> {
     const meeting = await this.meetingModel.findOne({
@@ -209,6 +208,7 @@ export class MeetingService {
       throw new ForbiddenError('Access denied');
     }
 
+    console.log(meeting);
     const isInBlockList = meeting.blockList.some(
       (_id) => _id.toString() === targetUserId.toString(),
     );
@@ -231,6 +231,44 @@ export class MeetingService {
     );
 
     meeting.blockList.push(targetUserId);
+    return await meeting.save();
+  }
+
+  async unblockMeetingUser(
+    { initiatorId, meetingId, targetUserId }: BlockUserInput,
+    currentUser: User,
+  ): Promise<Meeting> {
+    const meeting = await this.meetingModel.findOne({
+      initiator: initiatorId,
+      _id: meetingId,
+    });
+
+    const targetUser = await this.userModel.findById(targetUserId);
+
+    if (!targetUser) {
+      throw new ApolloError('Target user not found');
+    }
+
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
+      currentUser,
+      meeting.initiator,
+    );
+
+    if (!isPermitToWriteUser) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    const targetUserIndex = meeting.blockList.findIndex(
+      (_id) => _id.toString() === targetUserId.toString(),
+    );
+
+    if (targetUserIndex < 0) {
+      throw new ApolloError('User is not in block list');
+    }
+
+    meeting.blockList.splice(targetUserIndex, 1);
+    console.log(meeting.blockList);
+
     return await meeting.save();
   }
 
