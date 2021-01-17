@@ -1,6 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ApolloError, ForbiddenError } from 'apollo-server-express';
+import {
+  ApolloError,
+  ForbiddenError,
+  PubSubEngine,
+} from 'apollo-server-express';
 import { Model } from 'mongoose';
 import { User, UserCurrentStates, UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
@@ -8,6 +12,7 @@ import {
   CreateMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
+  SendMeetingMessageInput,
 } from './dto/meeting.input';
 import {
   MeetingEventsPayload,
@@ -23,6 +28,7 @@ export class MeetingService {
   constructor(
     @InjectModel('meeting') private meetingModel: Model<MeetingDocument>,
     @InjectModel('user') private userModel: Model<UserDocument>,
+    @Inject('pubSub') private readonly pubSub: PubSubEngine,
     private readonly userService: UserService,
   ) {}
 
@@ -174,7 +180,7 @@ export class MeetingService {
     targetUser: User;
   }> {
     const targetMeeting = await this.meetingModel.findById(meetingId);
-    if (!targetMeeting) {
+    if (!targetMeeting || targetMeeting.endedAt) {
       throw new ApolloError('Meeting not found');
     }
 
@@ -212,19 +218,45 @@ export class MeetingService {
 
   async checkMeetingEventsPayload(
     { type }: MeetingEventsPayload,
-    { userId, meetingId }: { userId: string; meetingId: string },
+    { meetingId }: { meetingId: string },
     ctx: any,
   ): Promise<boolean> {
-    const meeting = await this.meetingModel.findById(meetingId);
+    const meeting = await this.meetingModel.findOne({
+      _id: meetingId,
+      participants: { $elemMatch: { _id: ctx.user._id, isLeft: false } },
+    });
     if (!meeting) return false;
     console.log('subscribing user', ctx.user._id);
-    const userIsParticipant = meeting.participants.find(
-      (participant) => participant._id.toString() === ctx.user._id.toString(),
-    );
-    if (!userIsParticipant) {
-      return false;
+    return true;
+  }
+
+  async sendMeetingMessage(
+    { content, meetingId }: SendMeetingMessageInput,
+    currentUser: User,
+  ): Promise<MeetingMessage> {
+    const meeting = await this.meetingModel.findOne({
+      _id: meetingId,
+      participants: { $elemMatch: { _id: currentUser._id, isLeft: false } },
+    });
+    if (!meeting) {
+      throw new ApolloError('Meeting not found');
     }
 
-    if (meeting) return true;
+    const meetingMsg = {
+      content,
+      sentAt: new Date(),
+    };
+    const meetingEventsPayload = await this.createMeetingEventsPayload(
+      MeetingEventType.MESSAGE,
+      currentUser,
+      meeting,
+      meetingMsg,
+    );
+
+    this.pubSub.publish('meetingChannel', {
+      meetingChannel: meetingEventsPayload,
+    });
+
+    return meetingMsg;
   }
 }

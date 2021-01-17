@@ -33,3 +33,15 @@ export class InviteMeetingInput {
   @Field((type) => ID)
   meetingId: string;
 }
+
+@InputType()
+export class SendMeetingMessageInput {
+  @Field((type) => ID)
+  userId: string;
+
+  @Field()
+  content: string;
+
+  @Field((type) => ID)
+  meetingId: string;
+}

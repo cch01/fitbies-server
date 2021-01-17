@@ -28,13 +28,19 @@ import {
   CreateMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
+  SendMeetingMessageInput,
 } from './dto/meeting.input';
 import { Meeting, MeetingConnection, MeetingDocument } from './meeting.model';
 import { MeetingService } from './meeting.service';
 import { GeneralUserGuard } from 'src/guards/general.user.guard';
-import { MeetingEventsPayload, MeetingEventType } from './dto/meeting.payload';
+import {
+  MeetingEventsPayload,
+  MeetingEventType,
+  MeetingMessage,
+} from './dto/meeting.payload';
 import * as _ from 'lodash';
 import { UserChannelEventType } from '../user/dto/user.payload';
+import { withUnsubscribe } from 'src/utils/withUnsubscribe';
 
 //TODO add pubsub dispatching on meeting resolvers / services
 @Resolver((of) => Meeting)
@@ -46,7 +52,7 @@ export class MeetingResolver {
     @InjectModel('meeting')
     private readonly meetingModel: Model<MeetingDocument>,
     @InjectModel('user') private readonly userModel: Model<UserDocument>,
-    @Inject('PUB_SUB') private readonly pubSub: PubSubEngine,
+    @Inject('pubSub') private readonly pubSub: PubSubEngine,
   ) {}
 
   @Mutation((returns) => Meeting, { nullable: true })
@@ -107,7 +113,7 @@ export class MeetingResolver {
     return result;
   }
 
-  @Mutation((returns) => Meeting, { nullable: true })
+  @Mutation((returns) => Meeting)
   async leaveMeeting(
     @Args('meetingId', { type: () => ID }) meetingId: string,
     @CurrentUser() currentUser: User,
@@ -127,17 +133,26 @@ export class MeetingResolver {
     return result;
   }
 
+  @Mutation((returns) => MeetingMessage)
+  async sendMeetingMessage(
+    @Args('sendMeetingMessageInput') input: SendMeetingMessageInput,
+    @CurrentUser() currentUser: User,
+  ): Promise<MeetingMessage> {
+    const { userId } = input;
+    if (!(await this.userService.isPermitToWriteUser(currentUser, userId))) {
+      throw new ForbiddenError('Access denied');
+    }
+    return await this.meetingService.sendMeetingMessage(input, currentUser);
+  }
+
   @Mutation((returns) => Meeting)
   async inviteMeeting(
     @Args('inviteMeetingInput')
     { meetingId, email, userId }: InviteMeetingInput,
     @CurrentUser() currentUser: User,
   ) {
-    //TODO: fix this checking
-    if (!(meetingId || userId)) {
-      throw new UserInputError(
-        'At least meetingId or userId must be specified',
-      );
+    if (!(email || userId)) {
+      throw new UserInputError('At least email or userId must be specified');
     }
     const result = await this.meetingService.inviteMeetingChecking(
       { meetingId, email, userId },
@@ -229,8 +244,13 @@ export class MeetingResolver {
     if (!meeting || meeting.endedAt || !isParticipant) {
       throw new ApolloError('Meeting not found / has already ended');
     }
-
-    return this.pubSub.asyncIterator('meetingChannel');
+    return withUnsubscribe(
+      this.pubSub.asyncIterator('meetingChannel'),
+      async () => {
+        console.log(`${currentUser.nickname} leaved`);
+        await this.leaveMeeting(meetingId, currentUser);
+      },
+    );
   }
   @ResolveField((returns) => String)
   async passCode(

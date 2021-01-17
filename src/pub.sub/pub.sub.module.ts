@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
 
 const pubsub = {
-  provide: 'PUB_SUB',
+  provide: 'pubSub',
   useValue: new PubSub(),
 };
 

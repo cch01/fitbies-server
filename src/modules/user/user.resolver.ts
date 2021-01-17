@@ -34,7 +34,7 @@ export class UserResolver {
     private readonly userService: UserService,
     private readonly sessionService: SessionService,
     @InjectModel('user') private readonly userModel: Model<UserDocument>,
-    @Inject('PUB_SUB') private readonly pubSub: PubSubEngine,
+    @Inject('pubSub') private readonly pubSub: PubSubEngine,
   ) {}
 
   @Query((returns) => User, { nullable: true })
