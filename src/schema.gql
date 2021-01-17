@@ -167,6 +167,7 @@ type Mutation {
   signIn(signInInput: SignInInput!): SignInPayload
   signOut: Boolean
   updateUser(updateUserInput: UpdateUserInput!): User
+  resetPassword(resetPasswordInput: ResetPasswordInput!): User
   createMeeting(createMeetingInput: CreateMeetingInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
   endMeeting(userId: ID!, meetingId: ID!): Meeting
@@ -196,6 +197,13 @@ input UpdateUserInput {
   firstName: String
   lastName: String
   email: String
+}
+
+input ResetPasswordInput {
+  email: String!
+  oldPassword: String!
+  newPassword: String!
+  confirmPassword: String!
 }
 
 input CreateMeetingInput {

@@ -1,4 +1,4 @@
-import { Inject, UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { Args, Resolver, Query, ID } from '@nestjs/graphql';
 import { CurrentUser } from 'src/decorators/user.decorator';
 import { ActivatedUserGuard } from 'src/guards/activated.user.guard';
@@ -11,17 +11,13 @@ import { ConnectionArgs } from 'src/modules/common/dto/connection.args';
 import { sendEmail } from 'src/utils/send.email';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { SessionHandler } from 'src/guards/session.handler';
-import { SessionService } from 'src/modules/session/session.service';
-import { PubSubEngine } from 'graphql-subscriptions';
 
 @Resolver()
 @UseGuards(SessionHandler)
 export class UserQueriesResolver {
   constructor(
     private readonly userService: UserService,
-    private readonly sessionService: SessionService,
     @InjectModel('user') private readonly userModel: Model<UserDocument>,
-    @Inject('pubSub') private readonly pubSub: PubSubEngine,
   ) {}
 
   @Query((returns) => User, { nullable: true })
@@ -31,7 +27,7 @@ export class UserQueriesResolver {
     @Args('email', { nullable: true }) email: string,
     @CurrentUser() currentUser: User,
   ): Promise<User> {
-    return await this.userService.findUser(currentUser, { _id, email });
+    return await this.userService.user(currentUser, { _id, email });
   }
 
   @Query((returns) => UserConnection, { nullable: true })

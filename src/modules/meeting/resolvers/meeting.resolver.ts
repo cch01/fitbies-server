@@ -1,7 +1,7 @@
-import { Inject, UseGuards } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
 import { InjectModel } from '@nestjs/mongoose';
-import { ForbiddenError, PubSubEngine } from 'apollo-server-express';
+import { ForbiddenError } from 'apollo-server-express';
 import { Model } from 'mongoose';
 import { CurrentUser } from 'src/decorators/user.decorator';
 import { ActivatedUserGuard } from 'src/guards/activated.user.guard';
