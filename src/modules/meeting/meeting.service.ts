@@ -174,7 +174,7 @@ export class MeetingService {
     targetUser: User;
   }> {
     const targetMeeting = await this.meetingModel.findById(meetingId);
-    if (!targetMeeting) {
+    if (!targetMeeting || targetMeeting.endedAt) {
       throw new ApolloError('Meeting not found');
     }
 

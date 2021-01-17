@@ -1,9 +1,10 @@
 import * as nodemailer from 'nodemailer';
 
 const transporter =
-  process.env.ENVIRONMENT === 'DEV'
+  process.env.NODE_ENV === 'development'
     ? nodemailer.createTransport({
         host: process.env.DEV_EMAIL_HOST,
+        port: process.env.DEV_EMAIL_PORT,
         auth: {
           user: process.env.DEV_EMAIL_USER, // generated ethereal user
           pass: process.env.DEV_EMAIL_PASSWORD, // generated ethereal password

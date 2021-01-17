@@ -35,6 +35,7 @@ import { GeneralUserGuard } from 'src/guards/general.user.guard';
 import { MeetingEventsPayload, MeetingEventType } from './dto/meeting.payload';
 import * as _ from 'lodash';
 import { UserChannelEventType } from '../user/dto/user.payload';
+import { withUnsubscribe } from 'src/utils/withUnsubscribe';
 
 //TODO add pubsub dispatching on meeting resolvers / services
 @Resolver((of) => Meeting)
@@ -133,11 +134,8 @@ export class MeetingResolver {
     { meetingId, email, userId }: InviteMeetingInput,
     @CurrentUser() currentUser: User,
   ) {
-    //TODO: fix this checking
-    if (!(meetingId || userId)) {
-      throw new UserInputError(
-        'At least meetingId or userId must be specified',
-      );
+    if (!(email || userId)) {
+      throw new UserInputError('At least email or userId must be specified');
     }
     const result = await this.meetingService.inviteMeetingChecking(
       { meetingId, email, userId },
@@ -229,8 +227,13 @@ export class MeetingResolver {
     if (!meeting || meeting.endedAt || !isParticipant) {
       throw new ApolloError('Meeting not found / has already ended');
     }
-
-    return this.pubSub.asyncIterator('meetingChannel');
+    return withUnsubscribe(
+      this.pubSub.asyncIterator('meetingChannel'),
+      async () => {
+        console.log(`${currentUser.nickname} leaved`);
+        await this.leaveMeeting(meetingId, currentUser);
+      },
+    );
   }
   @ResolveField((returns) => String)
   async passCode(
