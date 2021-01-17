@@ -2,7 +2,12 @@ import { Inject, UseGuards } from '@nestjs/common';
 import { Args, Mutation, Resolver, Query, ID, Context } from '@nestjs/graphql';
 import { CurrentUser } from 'src/decorators/user.decorator';
 import { ActivatedUserGuard } from 'src/guards/activated.user.guard';
-import { SignInInput, SignUpInput, UpdateUserInput } from '../dto/user.input';
+import {
+  ResetPasswordInput,
+  SignInInput,
+  SignUpInput,
+  UpdateUserInput,
+} from '../dto/user.input';
 import { SignInPayload } from '../dto/user.payload';
 import { User, UserConnection, UserDocument } from '../user.model';
 import { UserService } from '../user.service';
@@ -33,7 +38,7 @@ export class UserMutationsResolver {
     @Args('email', { nullable: true }) email: string,
     @CurrentUser() currentUser: User,
   ): Promise<User> {
-    return await this.userService.findUser(currentUser, { _id, email });
+    return await this.userService.user(currentUser, { _id, email });
   }
 
   @Query((returns) => UserConnection, { nullable: true })
@@ -75,5 +80,17 @@ export class UserMutationsResolver {
   @UseGuards(ActivatedUserGuard)
   async updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
     return await this.userService.updateUser(updateUserInput);
+  }
+
+  @Mutation((returns) => User, { nullable: true })
+  @UseGuards(ActivatedUserGuard)
+  async resetPassword(
+    @Args('resetPasswordInput') resetPasswordInput: ResetPasswordInput,
+    @CurrentUser() currentUser: User,
+  ) {
+    return await this.userService.resetPassword(
+      currentUser,
+      resetPasswordInput,
+    );
   }
 }

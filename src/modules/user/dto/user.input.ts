@@ -1,4 +1,5 @@
 import { Field, InputType } from '@nestjs/graphql';
+import { IsEmail } from 'class-validator';
 import { UserType } from '../user.model';
 
 @InputType()
@@ -44,4 +45,20 @@ export class SignInInput {
 
   @Field()
   password: string;
+}
+
+@InputType()
+export class ResetPasswordInput {
+  @IsEmail()
+  @Field()
+  email: string;
+
+  @Field()
+  oldPassword: string;
+
+  @Field()
+  newPassword: string;
+
+  @Field()
+  confirmPassword: string;
 }

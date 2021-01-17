@@ -1,7 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
+import {
+  ResetPasswordInput,
+  SignInInput,
+  SignUpInput,
+  UpdateUserInput,
+} from './dto/user.input';
 import { User, UserDocument } from './user.model';
 import {
   ApolloError,
@@ -86,7 +91,7 @@ export class UserService {
     return userEventPayload;
   }
 
-  async findUser(
+  async user(
     currentUser: User,
     { _id, email }: { _id: string; email: string },
   ): Promise<User> {
@@ -128,6 +133,44 @@ export class UserService {
 
   isClient(user: User): boolean {
     return user.type === 'CLIENT';
+  }
+
+  async resetPassword(
+    currentUser: User,
+    { email, oldPassword, newPassword, confirmPassword }: ResetPasswordInput,
+  ): Promise<User> {
+    const targetUser = await this.userModel.findOne({ email });
+    if (!targetUser) {
+      throw new ApolloError('User not found');
+    }
+
+    const isPermitToWriteUser = await this.isPermitToWriteUser(
+      currentUser,
+      targetUser._id,
+    );
+
+    if (!isPermitToWriteUser) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    const isPasswordCorrect = bcrypt.compareSync(
+      oldPassword,
+      targetUser.password,
+    );
+
+    if (!isPasswordCorrect) {
+      throw new UserInputError('Incorrect password');
+    }
+
+    if (confirmPassword !== newPassword) {
+      throw new UserInputError('Invalid new passwords');
+    }
+    const newPasswordHash = bcrypt.hashSync(
+      newPassword,
+      bcrypt.genSaltSync(10),
+    );
+
+    return await targetUser.set('password', newPasswordHash).save();
   }
 
   async isPermitToWriteUser(
