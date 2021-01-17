@@ -1,35 +1,24 @@
 import { Inject, UseGuards } from '@nestjs/common';
-import {
-  Args,
-  Mutation,
-  Resolver,
-  Query,
-  ID,
-  ResolveField,
-  Parent,
-  Context,
-  Subscription,
-} from '@nestjs/graphql';
+import { Args, Mutation, Resolver, Query, ID, Context } from '@nestjs/graphql';
 import { CurrentUser } from 'src/decorators/user.decorator';
 import { ActivatedUserGuard } from 'src/guards/activated.user.guard';
-import { SignInInput, SignUpInput, UpdateUserInput } from './dto/user.input';
-import { SignInPayload, UserChannelPayload } from './dto/user.payload';
-import { User, UserConnection, UserDocument } from './user.model';
-import { UserService } from './user.service';
+import { SignInInput, SignUpInput, UpdateUserInput } from '../dto/user.input';
+import { SignInPayload } from '../dto/user.payload';
+import { User, UserConnection, UserDocument } from '../user.model';
+import { UserService } from '../user.service';
 import { ForbiddenError } from 'apollo-server-express';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { ConnectionArgs } from '../common/dto/connection.args';
-import { sendEmail } from 'src/utils/send.email';
+import { ConnectionArgs } from 'src/modules/common/dto/connection.args';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { SessionHandler } from 'src/guards/session.handler';
-import { SessionService } from '../session/session.service';
+import { SessionService } from 'src/modules/session/session.service';
 import { PubSubEngine } from 'graphql-subscriptions';
 
 //TODO forgot pw
-@Resolver((of) => User)
+@Resolver()
 @UseGuards(SessionHandler)
-export class UserResolver {
+export class UserMutationsResolver {
   constructor(
     private readonly userService: UserService,
     private readonly sessionService: SessionService,
@@ -60,13 +49,6 @@ export class UserResolver {
     return await applyConnectionArgs(connectionArgs, this.userModel);
   }
 
-  @Query((returns) => User)
-  @UseGuards(ActivatedUserGuard)
-  async me(@CurrentUser() currentUser: User): Promise<User> {
-    sendEmail();
-    return currentUser;
-  }
-
   @Mutation((returns) => User, { nullable: true })
   async signUp(@Args('signUpInput') signUpInput: SignUpInput): Promise<User> {
     if (signUpInput.type === 'ADMIN') {
@@ -93,34 +75,5 @@ export class UserResolver {
   @UseGuards(ActivatedUserGuard)
   async updateUser(@Args('updateUserInput') updateUserInput: UpdateUserInput) {
     return await this.userService.updateUser(updateUserInput);
-  }
-
-  @ResolveField((returns) => String)
-  @UseGuards(ActivatedUserGuard)
-  async type(@Parent() user: User, @CurrentUser() currentUser: User) {
-    const isPermitToReadUser = await this.userService.isPermitToReadUser(
-      currentUser,
-      user._id,
-    );
-    if (!isPermitToReadUser) {
-      throw new ForbiddenError('Access denied');
-    }
-    return user.type;
-  }
-
-  @Subscription((returns) => UserChannelPayload, {
-    filter: (payload, { userId }, context) => {
-      return payload.userChannel.to._id.toString() === userId.toString();
-    },
-  })
-  @UseGuards(ActivatedUserGuard)
-  async userChannel(
-    @Args('userId', { type: () => ID }) userId: string,
-    @CurrentUser() currentUser: User,
-  ) {
-    if (userId !== currentUser._id.toString()) {
-      throw new ForbiddenError('Access denied');
-    }
-    return this.pubSub.asyncIterator('userChannel');
   }
 }
