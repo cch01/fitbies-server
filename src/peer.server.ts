@@ -8,10 +8,10 @@ export default function (port: number): any {
   });
 
   peerServer.on('connection', (client) => {
-    console.log(`${client} has been connected.`);
+    console.log(`${client.getId()} has been connected.`);
   });
 
   peerServer.on('disconnect', (client) => {
-    console.log(`${client} has been disconnected.`);
+    console.log(`${client.getId()} has been disconnected.`);
   });
 }

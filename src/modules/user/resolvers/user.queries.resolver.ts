@@ -8,7 +8,6 @@ import { ForbiddenError } from 'apollo-server-express';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConnectionArgs } from 'src/modules/common/dto/connection.args';
-import { sendEmail } from 'src/utils/send.email';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { SessionHandler } from 'src/guards/session.handler';
 
@@ -46,7 +45,6 @@ export class UserQueriesResolver {
   @Query((returns) => User)
   @UseGuards(ActivatedUserGuard)
   async me(@CurrentUser() currentUser: User): Promise<User> {
-    sendEmail();
     return currentUser;
   }
 }

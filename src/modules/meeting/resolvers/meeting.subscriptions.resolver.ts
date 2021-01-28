@@ -65,6 +65,7 @@ export class MeetingSubscriptionsResolver {
     if (meeting?.endedAt || !isParticipant) {
       throw new ApolloError('Meeting not found / has already ended');
     }
+    console.log(`${currentUser._id} has subscripted meetingChannel`);
     return withUnsubscribe(
       this.pubSub.asyncIterator('meetingChannel'),
       async () => {

@@ -18,6 +18,7 @@ import { GeneralUserGuard } from 'src/guards/general.user.guard';
 import { MeetingMessage } from '../dto/meeting.payload';
 import { CurrentUser } from 'src/decorators/user.decorator';
 
+//TODO: add roomId verification
 @Resolver()
 @UseGuards(SessionHandler)
 export class MeetingMutationsResolver {
