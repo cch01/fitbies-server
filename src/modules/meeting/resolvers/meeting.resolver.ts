@@ -8,7 +8,7 @@ import { ActivatedUserGuard } from 'src/guards/activated.user.guard';
 import { GeneralUserGuard } from 'src/guards/general.user.guard';
 import { User, UserDocument } from 'src/modules/user/user.model';
 import { UserService } from 'src/modules/user/user.service';
-import { Meeting } from '../meeting.model';
+import { Meeting, Participant } from '../meeting.model';
 
 @Resolver((of) => Meeting)
 export class MeetingResolver {
@@ -55,6 +55,17 @@ export class MeetingResolver {
       throw new ForbiddenError('Access denied');
     }
     return meeting.blockList;
+  }
+  // TODO: dataloader
+  @ResolveField((returns) => String)
+  @UseGuards(GeneralUserGuard)
+  async participants(@Parent() meeting: Meeting): Promise<Participant[]> {
+    const result = await Promise.all(
+      meeting.participants.map(async (p) => {
+        return await this.userModel.findById(p._id);
+      }),
+    );
+    return await result;
   }
 
   @ResolveField((returns) => String)

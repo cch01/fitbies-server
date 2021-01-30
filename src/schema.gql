@@ -87,6 +87,7 @@ enum UserChannelEventType {
 
 type Participant {
   _id: ID!
+  nickname: String
   joinedAt: DateTime
   leftAt: DateTime
   isLeft: Boolean

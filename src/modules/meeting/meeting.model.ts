@@ -15,6 +15,9 @@ export class Participant {
   @Prop({ type: mongoose.SchemaTypes.ObjectId, ref: 'users' })
   _id!: string;
 
+  @Field((type) => String, { nullable: true })
+  nickname?: string;
+
   @Field({ nullable: true })
   @Prop({ default: () => new Date() })
   joinedAt?: Date;
