@@ -288,8 +288,14 @@ export class MeetingService {
     targetEmail: string,
     nickname: string,
     meetingId: string,
+    passCode?: string,
   ) {
-    EmailHelper.sendMeetingInvitationEmail(nickname, targetEmail, meetingId);
+    EmailHelper.sendMeetingInvitationEmail(
+      nickname,
+      targetEmail,
+      meetingId,
+      passCode,
+    );
   }
 
   async inviteUserToMeeting(
@@ -317,7 +323,13 @@ export class MeetingService {
       // }
     }
 
-    email && this.inviteMeetingByEmail(email, currentUser.nickname, meetingId);
+    email &&
+      this.inviteMeetingByEmail(
+        email,
+        currentUser.nickname,
+        meetingId,
+        targetMeeting.passCode,
+      );
 
     if (userId) {
       await this.userService.createUserEventsAndDispatch(
