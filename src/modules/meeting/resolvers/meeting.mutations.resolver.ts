@@ -7,7 +7,7 @@ import { User } from 'src/modules/user/user.model';
 import { UserService } from 'src/modules/user/user.service';
 import {
   BlockUserInput,
-  CreateMeetingInput,
+  HostMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
   SendMeetingMessageInput,
@@ -29,19 +29,19 @@ export class MeetingMutationsResolver {
 
   @Mutation((returns) => Meeting, { nullable: true })
   @UseGuards(ActivatedUserGuard)
-  async createMeeting(
-    @Args('createMeetingInput') createMeetingInput: CreateMeetingInput,
+  async hostMeeting(
+    @Args('hostMeetingInput') hostMeetingInput: HostMeetingInput,
     @CurrentUser() currentUser: User,
   ): Promise<Meeting> {
     const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
       currentUser,
-      createMeetingInput.initiatorId,
+      hostMeetingInput.initiatorId,
     );
     if (!isPermitToWriteUser) {
       throw new ForbiddenError('Access denied');
     }
 
-    return this.meetingService.createMeeting(createMeetingInput);
+    return this.meetingService.hostMeeting(hostMeetingInput);
   }
 
   @Mutation((returns) => Meeting, { nullable: true })

@@ -10,7 +10,7 @@ import { User, UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
 import {
   BlockUserInput,
-  CreateMeetingInput,
+  HostMeetingInput,
   InviteMeetingInput,
   JoinMeetingInput,
   SendMeetingMessageInput,
@@ -34,10 +34,10 @@ export class MeetingService {
     private readonly userService: UserService,
   ) {}
 
-  async createMeeting({
+  async hostMeeting({
     initiatorId: initiator,
     passCode,
-  }: CreateMeetingInput): Promise<Meeting> {
+  }: HostMeetingInput): Promise<Meeting> {
     const newMeeting = new this.meetingModel({
       initiator,
       passCode,
