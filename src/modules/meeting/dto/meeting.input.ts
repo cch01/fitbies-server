@@ -1,7 +1,7 @@
 import { Field, ID, InputType } from '@nestjs/graphql';
 import { IsEmail } from 'class-validator';
 @InputType()
-export class CreateMeetingInput {
+export class HostMeetingInput {
   @Field((type) => ID)
   initiatorId: string;
 
