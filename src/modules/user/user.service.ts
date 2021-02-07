@@ -27,10 +27,13 @@ import {
 } from './dto/user.payload';
 import EmailHelper from 'src/utils/email.helper';
 import * as jwt from 'jsonwebtoken';
+import * as _ from 'lodash';
+import { SessionDocument } from '../session/session.model';
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel('user') private userModel: Model<UserDocument>,
+    @InjectModel('session') private sessionModel: Model<SessionDocument>,
     @Inject('pubSub') private pubSub: PubSubEngine,
     private readonly sessionService: SessionService,
   ) {}
@@ -40,6 +43,14 @@ export class UserService {
       signUpInput.password,
       bcrypt.genSaltSync(10),
     );
+    const emailIsUsed = !_.isEmpty(
+      await this.userModel.find({
+        email: signUpInput.email,
+      }),
+    );
+    if (emailIsUsed) {
+      throw new ApolloError('This email has been used.');
+    }
     const activationToken = EmailHelper.generateEmailToken({
       email: signUpInput.email,
     });
@@ -74,11 +85,17 @@ export class UserService {
     return await user.set('isActivated', true).save();
   }
 
-  async createAnonymousUser(input: AnonymousSignUpInput): Promise<User> {
+  async createAnonymousUser(
+    input: AnonymousSignUpInput,
+    token: string,
+  ): Promise<User> {
     const user = new this.userModel({
       ...input,
       type: UserType.ANONYMOUS_CLIENT,
     });
+
+    await this.sessionModel.updateOne({ sid: token }, { user: user._id });
+
     return await user.save();
   }
 

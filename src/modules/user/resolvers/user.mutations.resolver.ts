@@ -52,8 +52,12 @@ export class UserMutationsResolver {
   @Mutation((returns) => User)
   async anonymousSignUp(
     @Args('anonymousSignUpInput') anonymousSignUpInput: AnonymousSignUpInput,
+    @Context() ctx,
   ): Promise<User> {
-    return await this.userService.createAnonymousUser(anonymousSignUpInput);
+    return await this.userService.createAnonymousUser(
+      anonymousSignUpInput,
+      ctx.token,
+    );
   }
 
   @Mutation((returns) => SignInPayload, { nullable: true })

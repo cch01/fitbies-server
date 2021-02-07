@@ -35,7 +35,7 @@ export class User {
   lastName?: string;
 
   @IsEmail()
-  @Prop()
+  @Prop({ unique: true })
   @Field({ nullable: true })
   email?: string;
 

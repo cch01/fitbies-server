@@ -10,7 +10,7 @@ export class SessionService {
   ) {}
 
   async createSession(userId?: string): Promise<string> {
-    return (
+    return await (
       await new this.sessionModel({
         user: userId,
       }).save()
