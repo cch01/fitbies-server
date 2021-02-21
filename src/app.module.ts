@@ -31,8 +31,8 @@ import * as _ from 'lodash';
       },
       context: async (context) => context,
       cors: {
-        origin: 'http://localhost:4000',
         credentials: true,
+        origin: true,
       },
     }),
     UserModule,
