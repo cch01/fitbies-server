@@ -10,6 +10,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ConnectionArgs } from 'src/modules/common/dto/connection.args';
 import { applyConnectionArgs } from 'src/utils/apply.connection.args';
 import { SessionHandler } from 'src/guards/session.handler';
+import { GeneralUserGuard } from 'src/guards/general.user.guard';
 
 @Resolver()
 @UseGuards(SessionHandler)
@@ -43,7 +44,7 @@ export class UserQueriesResolver {
   }
 
   @Query((returns) => User)
-  @UseGuards(ActivatedUserGuard)
+  @UseGuards(GeneralUserGuard)
   async me(@CurrentUser() currentUser: User): Promise<User> {
     return currentUser;
   }

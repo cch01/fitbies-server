@@ -47,8 +47,9 @@ export default class EmailHelper {
     subject = 'Invitation to join a ZOOMED meeting',
   ): Promise<void> {
     try {
-      const url = `http://${process.env.FRONTEND_URI}/join/${invitationToken}`;
-
+      const tokenPart = `/join?mid=${invitationToken}`;
+      const passCodePart = passCode ? `&passcode=${passCode}` : '';
+      const url = `http://${process.env.FRONTEND_URI}${tokenPart}${passCodePart}`;
       const html = meetingInvitationEmail(initiatorName, url, passCode);
 
       await sendEmail(targetEmail, subject, html);
