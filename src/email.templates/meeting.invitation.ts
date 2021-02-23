@@ -25,17 +25,19 @@ export default function meetingInvitationEmail(
         </td> 
       </tr>
       ${
-        passCode ??
-        `<tr>
-        <td>
-          <h4>Here is the pass code for joining the meeting.</h4>
-        </td> 
-      </tr>
-      <tr>
-        <td>
-          <h2>${passCode}</h2>
-        </td> 
-      </tr>`
+        passCode &&
+        `
+          <tr>
+            <td>
+              <h4>Here is the pass code for joining the meeting:</h4>
+            </td> 
+          </tr>
+          <tr>
+            <td>
+              <h2>${passCode}</h2>
+            </td> 
+          </tr>
+        `
       }
     </table>  
   </body>
