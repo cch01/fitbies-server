@@ -176,17 +176,29 @@ export class MeetingService {
       { useFindAndModify: true, new: true },
     );
 
-    setTimeout(async () => {
-      const meeting = await this.meetingModel.findOne({ meetingId });
-      const usersInMeeting = meeting.participants.some((p) => !p.isLeft);
-      !usersInMeeting && (await meeting.set('endedAt', new Date()).save());
-    }, 60000);
+    const isUserLeft = meeting.participants.find((_p) => _p._id === userId)
+      ?.isLeft;
 
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.LEAVE_MEETING,
-      currentUser,
-      updatedMeeting,
-    );
+    console.log('isUserLeft', isUserLeft);
+    !isUserLeft &&
+      (await this.createMeetingEventsAndDispatch(
+        MeetingEventType.LEAVE_MEETING,
+        currentUser,
+        updatedMeeting,
+      ));
+
+    setTimeout(async () => {
+      const meeting = await this.meetingModel.findOne({
+        meetingId,
+        endedAt: null,
+      });
+      if (!meeting) return;
+      const usersInMeeting = meeting?.participants.some((p) => !p.isLeft);
+      if (!usersInMeeting) {
+        await meeting.set('endedAt', new Date()).save();
+      }
+    }, 30000);
+
 
     return updatedMeeting;
   }
@@ -396,7 +408,7 @@ export class MeetingService {
   ): Promise<MeetingMessage> {
     const meeting = await this.meetingModel.findOne({
       meetingId,
-      participants: { $elemMatch: { _id: currentUser._id, isLeft: false } },
+      participants: { $elemMatch: { _id: currentUser._id } },
       endedAt: null,
     });
     if (!meeting) {
