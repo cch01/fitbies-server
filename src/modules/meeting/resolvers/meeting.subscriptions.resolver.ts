@@ -50,13 +50,16 @@ export class MeetingSubscriptionsResolver {
   @UseGuards(GeneralUserGuard)
   async meetingChannel(
     @Args('userId', { type: () => ID }) userId: string,
-    @Args('meetingId', { type: () => ID }) meetingId: string,
+    @Args('meetingId', { type: () => String }) meetingId: string,
     @CurrentUser() currentUser: User,
   ) {
     if (!(await this.userService.isPermitToReadUser(currentUser, userId))) {
       throw new ForbiddenError('Access denied');
     }
-    const meeting = await this.meetingModel.findById(meetingId);
+    const meeting = await this.meetingModel.findOne({
+      meetingId,
+      endedAt: null,
+    });
     const isParticipant = meeting?.participants?.find(
       (participant) =>
         !participant.isLeft &&

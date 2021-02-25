@@ -70,7 +70,7 @@ export class MeetingResolver {
 
   @ResolveField((returns) => String)
   @UseGuards(GeneralUserGuard)
-  async roomId(
+  async peerRoomId(
     @Parent() meeting: Meeting,
     @CurrentUser() currentUser: User,
   ): Promise<string> {
@@ -82,6 +82,6 @@ export class MeetingResolver {
       throw new ForbiddenError('Access denied');
     }
 
-    return meeting.roomId;
+    return meeting.peerRoomId;
   }
 }

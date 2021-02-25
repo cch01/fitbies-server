@@ -27,7 +27,7 @@ export class MeetingQueriesResolver {
   @Query((returns) => Meeting, { nullable: true })
   @UseGuards(GeneralUserGuard)
   async meeting(
-    @Args('meetingId', { type: () => ID }) meetingId: string,
+    @Args('meetingId', { type: () => String }) meetingId: string,
     @CurrentUser() currentUser: User,
   ) {
     return this.meetingService.meeting(meetingId, currentUser);
