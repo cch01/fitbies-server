@@ -40,7 +40,14 @@ export class Meeting {
 
   @Field({ nullable: true })
   @Prop({ default: () => uuidv4() })
-  roomId?: string;
+  peerRoomId?: string;
+
+  @Field({ nullable: true })
+  @Prop({
+    default: () => (uuidv4() as string).substr(0, 5).toUpperCase(),
+    unique: true,
+  })
+  meetingId?: string;
 
   @Field((type) => User, { nullable: true })
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true })

@@ -11,7 +11,7 @@ export class HostMeetingInput {
 
 @InputType()
 export class JoinMeetingInput {
-  @Field((type) => ID)
+  @Field()
   meetingId: string;
 
   @Field((type) => ID)
@@ -30,7 +30,7 @@ export class InviteMeetingInput {
   @Field({ nullable: true })
   email?: string;
 
-  @Field((type) => ID)
+  @Field()
   meetingId: string;
 }
 
@@ -42,13 +42,13 @@ export class SendMeetingMessageInput {
   @Field()
   content: string;
 
-  @Field((type) => ID)
+  @Field()
   meetingId: string;
 }
 
 @InputType()
 export class BlockUserInput {
-  @Field((type) => ID)
+  @Field()
   meetingId: string;
 
   @Field((type) => ID)

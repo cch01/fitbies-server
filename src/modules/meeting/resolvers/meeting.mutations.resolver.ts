@@ -18,7 +18,7 @@ import { GeneralUserGuard } from 'src/guards/general.user.guard';
 import { MeetingMessage } from '../dto/meeting.payload';
 import { CurrentUser } from 'src/decorators/user.decorator';
 
-//TODO: add roomId verification
+//TODO: add peerRoomId verification
 @Resolver()
 @UseGuards(SessionHandler)
 export class MeetingMutationsResolver {
@@ -68,7 +68,7 @@ export class MeetingMutationsResolver {
   @Mutation((returns) => Meeting, { nullable: true })
   @UseGuards(ActivatedUserGuard)
   async endMeeting(
-    @Args('meetingId', { type: () => ID }) meetingId: string,
+    @Args('meetingId', { type: () => String }) meetingId: string,
     @Args('userId', { type: () => ID }) userId: string,
     @CurrentUser() currentUser: User,
   ) {
@@ -86,7 +86,7 @@ export class MeetingMutationsResolver {
   @Mutation((returns) => Meeting)
   @UseGuards(GeneralUserGuard)
   async leaveMeeting(
-    @Args('meetingId', { type: () => ID }) meetingId: string,
+    @Args('meetingId', { type: () => String }) meetingId: string,
     @Args('userId', { type: () => ID }) userId: string,
     @CurrentUser() currentUser: User,
   ) {

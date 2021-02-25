@@ -51,10 +51,13 @@ export class MeetingService {
     { meetingId, joinerId, passCode }: JoinMeetingInput,
     currentUser: User,
   ): Promise<Meeting> {
-    const meeting = await await this.meetingModel.findOne({ _id: meetingId });
+    const meeting = await await this.meetingModel.findOne({
+      meetingId,
+      endedAt: null,
+    });
 
     if (!meeting || meeting.endedAt) {
-      throw new ApolloError('Meeting not found.');
+      throw new ApolloError('Meeting not found');
     }
 
     const isBlocked = meeting.blockList.some(
@@ -66,7 +69,7 @@ export class MeetingService {
     }
 
     if (meeting.passCode && meeting.passCode !== passCode) {
-      throw new ForbiddenError('Wrong pass code.');
+      throw new ForbiddenError('Invalid pass code');
     }
 
     let updatedMeeting;
@@ -81,7 +84,8 @@ export class MeetingService {
     } else {
       updatedMeeting = await this.meetingModel.findOneAndUpdate(
         {
-          _id: meetingId,
+          meetingId,
+          endedAt: null,
           participants: { $elemMatch: { _id: joinerId } },
         },
         {
@@ -109,8 +113,9 @@ export class MeetingService {
     currentUser: User,
   ): Promise<Meeting> {
     const meeting = await this.meetingModel.findOne({
-      _id: meetingId,
+      meetingId,
       initiator: userId,
+      endedAt: null,
     });
 
     if (!meeting) {
@@ -146,8 +151,9 @@ export class MeetingService {
     currentUser: User,
   ): Promise<Meeting> {
     const meeting = await this.meetingModel.findOne({
-      _id: meetingId,
+      meetingId,
       participants: { $elemMatch: { _id: userId, isLeft: false } },
+      endedAt: null,
     });
     if (!meeting) {
       throw new ApolloError(
@@ -157,8 +163,9 @@ export class MeetingService {
 
     const updatedMeeting = await this.meetingModel.findOneAndUpdate(
       {
-        _id: meetingId,
+        meetingId,
         participants: { $elemMatch: { _id: userId } },
+        endedAt: null,
       },
       {
         $set: {
@@ -169,11 +176,11 @@ export class MeetingService {
       { useFindAndModify: true, new: true },
     );
 
-    const usersInMeeting = updatedMeeting.participants.some((p) => !p.isLeft);
-
-    if (!usersInMeeting) {
-      await updatedMeeting.set('endedAt', new Date()).save();
-    }
+    setTimeout(async () => {
+      const meeting = await this.meetingModel.findOne({ meetingId });
+      const usersInMeeting = meeting.participants.some((p) => !p.isLeft);
+      !usersInMeeting && (await meeting.set('endedAt', new Date()).save());
+    }, 60000);
 
     await this.createMeetingEventsAndDispatch(
       MeetingEventType.LEAVE_MEETING,
@@ -190,7 +197,8 @@ export class MeetingService {
   ): Promise<Meeting> {
     const meeting = await this.meetingModel.findOne({
       initiator: initiatorId,
-      _id: meetingId,
+      meetingId,
+      endedAt: null,
     });
 
     const targetUser = await this.userModel.findById(targetUserId);
@@ -239,7 +247,8 @@ export class MeetingService {
   ): Promise<Meeting> {
     const meeting = await this.meetingModel.findOne({
       initiator: initiatorId,
-      _id: meetingId,
+      meetingId,
+      endedAt: null,
     });
 
     const targetUser = await this.userModel.findById(targetUserId);
@@ -272,7 +281,7 @@ export class MeetingService {
   }
 
   async meeting(meetingId: string, currentUser: User): Promise<Meeting> {
-    const meeting = await this.meetingModel.findOne({ _id: meetingId });
+    const meeting = await this.meetingModel.findOne({ meetingId });
     if (meeting.endedAt) {
       const isParticipant = meeting.participants.some(
         (p) => p._id.toString() === currentUser._id.toString(),
@@ -302,7 +311,10 @@ export class MeetingService {
     { userId, meetingId, email }: InviteMeetingInput,
     currentUser: User,
   ): Promise<Meeting> {
-    const targetMeeting = await this.meetingModel.findById(meetingId);
+    const targetMeeting = await this.meetingModel.findOne({
+      meetingId,
+      endedAt: null,
+    });
     if (!targetMeeting || targetMeeting.endedAt) {
       throw new ApolloError('Meeting not found');
     }
@@ -370,7 +382,7 @@ export class MeetingService {
     ctx: any,
   ): Promise<boolean> {
     const meeting = await this.meetingModel.findOne({
-      _id: meetingId,
+      meetingId,
       participants: { $elemMatch: { _id: ctx.user._id } },
     });
     if (!meeting) return false;
@@ -383,8 +395,9 @@ export class MeetingService {
     currentUser: User,
   ): Promise<MeetingMessage> {
     const meeting = await this.meetingModel.findOne({
-      _id: meetingId,
+      meetingId,
       participants: { $elemMatch: { _id: currentUser._id, isLeft: false } },
+      endedAt: null,
     });
     if (!meeting) {
       throw new ApolloError('Meeting not found');

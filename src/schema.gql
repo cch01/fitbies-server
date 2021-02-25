@@ -95,7 +95,8 @@ type Participant {
 
 type Meeting {
   _id: ID!
-  roomId: String
+  peerRoomId: String
+  meetingId: String
   initiator: User
   participants: [Participant!]
   blockList: [ID!]
@@ -145,7 +146,7 @@ type Query {
   users(connectionArgs: ConnectionArgs): UserConnection
   me: User!
   healthCheck: Boolean!
-  meeting(meetingId: ID!): Meeting
+  meeting(meetingId: String!): Meeting
   meetings(joinerId: ID, initiatorId: ID, connectionArgs: ConnectionArgs!): MeetingConnection!
 }
 
@@ -175,8 +176,8 @@ type Mutation {
   resetPassword(resetPasswordInput: ResetPasswordInput!): User
   hostMeeting(hostMeetingInput: HostMeetingInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
-  endMeeting(userId: ID!, meetingId: ID!): Meeting
-  leaveMeeting(userId: ID!, meetingId: ID!): Meeting!
+  endMeeting(userId: ID!, meetingId: String!): Meeting
+  leaveMeeting(userId: ID!, meetingId: String!): Meeting!
   blockMeetingUser(blockUserInput: BlockUserInput!): Meeting!
   unblockMeetingUser(blockUserInput: BlockUserInput!): Meeting!
   sendMeetingMessage(sendMeetingMessageInput: SendMeetingMessageInput!): MeetingMessage!
@@ -220,13 +221,13 @@ input HostMeetingInput {
 }
 
 input JoinMeetingInput {
-  meetingId: ID!
+  meetingId: String!
   joinerId: ID!
   passCode: String
 }
 
 input BlockUserInput {
-  meetingId: ID!
+  meetingId: String!
   targetUserId: ID!
   initiatorId: ID!
 }
@@ -234,16 +235,16 @@ input BlockUserInput {
 input SendMeetingMessageInput {
   userId: ID!
   content: String!
-  meetingId: ID!
+  meetingId: String!
 }
 
 input InviteMeetingInput {
   userId: ID
   email: String
-  meetingId: ID!
+  meetingId: String!
 }
 
 type Subscription {
   userChannel(userId: ID!): UserChannelPayload!
-  meetingChannel(meetingId: ID!, userId: ID!): MeetingEventsPayload!
+  meetingChannel(meetingId: String!, userId: ID!): MeetingEventsPayload!
 }
