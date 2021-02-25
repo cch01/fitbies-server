@@ -176,11 +176,11 @@ export class MeetingService {
       { useFindAndModify: true, new: true },
     );
 
-    const usersInMeeting = updatedMeeting.participants.some((p) => !p.isLeft);
-
-    if (!usersInMeeting) {
-      await updatedMeeting.set('endedAt', new Date()).save();
-    }
+    setTimeout(async () => {
+      const meeting = await this.meetingModel.findOne({ meetingId });
+      const usersInMeeting = meeting.participants.some((p) => !p.isLeft);
+      !usersInMeeting && (await meeting.set('endedAt', new Date()).save());
+    }, 60000);
 
     await this.createMeetingEventsAndDispatch(
       MeetingEventType.LEAVE_MEETING,
