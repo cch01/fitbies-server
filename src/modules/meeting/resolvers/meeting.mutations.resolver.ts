@@ -90,6 +90,7 @@ export class MeetingMutationsResolver {
     @Args('userId', { type: () => ID }) userId: string,
     @CurrentUser() currentUser: User,
   ) {
+    console.log('leave executed');
     if (!(await this.userService.isPermitToWriteUser(currentUser, userId))) {
       throw new ForbiddenError('Access denied');
     }

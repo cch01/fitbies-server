@@ -43,7 +43,7 @@ export class MeetingSubscriptionsResolver {
         context,
       );
 
-      console.log('dispatch?', result);
+      console.log(`dispatch in ${input.meetingId}`, result);
       return result;
     },
   })
@@ -53,6 +53,7 @@ export class MeetingSubscriptionsResolver {
     @Args('meetingId', { type: () => String }) meetingId: string,
     @CurrentUser() currentUser: User,
   ) {
+    console.log('meeting subscription coming!!!!!');
     if (!(await this.userService.isPermitToReadUser(currentUser, userId))) {
       throw new ForbiddenError('Access denied');
     }
@@ -60,13 +61,9 @@ export class MeetingSubscriptionsResolver {
       meetingId,
       endedAt: null,
     });
-    const isParticipant = meeting?.participants?.find(
-      (participant) =>
-        !participant.isLeft &&
-        participant._id.toString() === currentUser._id.toString(),
-    );
-    if (meeting?.endedAt || !isParticipant) {
-      throw new ApolloError('Meeting not found / has already ended');
+
+    if (meeting?.endedAt) {
+      throw new ApolloError('Meeting has already ended');
     }
     console.log(`${currentUser._id} has subscripted meetingChannel`);
     return withUnsubscribe(
