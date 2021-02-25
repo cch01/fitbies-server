@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
@@ -10,6 +8,7 @@ import { SessionModule } from './modules/session/session.module';
 import { MeetingModule } from './modules/meeting/meeting.module';
 import { PubSubModule } from './pub.sub/pub.sub.module';
 import * as _ from 'lodash';
+//TODO change gql path to '/'
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.DB_CONNECTION_URI, {
@@ -41,7 +40,5 @@ import * as _ from 'lodash';
     MeetingModule,
     PubSubModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
