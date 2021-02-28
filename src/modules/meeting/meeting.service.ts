@@ -199,7 +199,6 @@ export class MeetingService {
       }
     }, 30000);
 
-
     return updatedMeeting;
   }
 
