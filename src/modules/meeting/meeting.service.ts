@@ -14,6 +14,7 @@ import {
   InviteMeetingInput,
   JoinMeetingInput,
   SendMeetingMessageInput,
+  toggleMeetingMicAndCamInput,
 } from './dto/meeting.input';
 import {
   MeetingEventsPayload,
@@ -36,15 +37,17 @@ export class MeetingService {
 
   async hostMeeting({
     initiatorId: initiator,
+    isMuted,
+    IsCamOn,
     passCode,
   }: HostMeetingInput): Promise<Meeting> {
-    const newMeeting = new this.meetingModel({
+    return new this.meetingModel({
       initiator,
+      isMuted,
+      IsCamOn,
       passCode,
       participants: [{ _id: initiator }],
-    });
-
-    return newMeeting.save();
+    }).save();
   }
 
   async joinMeeting(
@@ -105,6 +108,23 @@ export class MeetingService {
     );
 
     return updatedMeeting;
+  }
+
+  async toggleMeetingMicAndCam(
+    { meetingId, ...input }: toggleMeetingMicAndCamInput,
+    currentUser: User,
+  ): Promise<Meeting> {
+    const targetMeeting = await this.meetingModel.findOne({
+      meetingId,
+    });
+    if (!targetMeeting) throw new ApolloError('Meeting not found');
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
+      currentUser,
+      targetMeeting.initiator,
+    );
+    if (!isPermitToWriteUser) throw new ApolloError('Access denied');
+
+    return await targetMeeting.set({ ...input }).save();
   }
 
   async endMeeting(

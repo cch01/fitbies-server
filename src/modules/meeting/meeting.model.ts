@@ -60,6 +60,14 @@ export class Meeting {
   })
   participants?: Participant[];
 
+  @Field()
+  @Prop()
+  isMuted: boolean;
+
+  @Field()
+  @Prop()
+  IsCamOn: boolean;
+
   @Field((type) => [ID], { nullable: true })
   @Prop({
     type: [mongoose.SchemaTypes.ObjectId],

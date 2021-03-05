@@ -2,12 +2,7 @@
 
 const config = {
   mongodb: {
-    // TODO Change (or review) the url to your MongoDB:
     url: process.env.DB_CONNECTION_URI,
-
-    // TODO Change this to your database name:
-    // databaseName: "YOURDATABASENAME",
-
     options: {
       useNewUrlParser: true, // removes a deprecation warning when connecting
       useUnifiedTopology: true, // removes a deprecating warning when connecting

@@ -7,6 +7,12 @@ export class HostMeetingInput {
 
   @Field({ nullable: true })
   passCode?: string;
+
+  @Field()
+  isMuted: boolean;
+
+  @Field()
+  IsCamOn: boolean;
 }
 
 @InputType()
@@ -56,4 +62,16 @@ export class BlockUserInput {
 
   @Field((type) => ID)
   initiatorId: string;
+}
+
+@InputType()
+export class toggleMeetingMicAndCamInput {
+  @Field()
+  meetingId: string;
+
+  @Field()
+  isCamOn: boolean;
+
+  @Field()
+  isMuted: boolean;
 }

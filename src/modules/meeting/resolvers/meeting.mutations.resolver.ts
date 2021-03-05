@@ -11,6 +11,7 @@ import {
   InviteMeetingInput,
   JoinMeetingInput,
   SendMeetingMessageInput,
+  toggleMeetingMicAndCamInput,
 } from '../dto/meeting.input';
 import { Meeting } from '../meeting.model';
 import { MeetingService } from '../meeting.service';
@@ -42,6 +43,15 @@ export class MeetingMutationsResolver {
     }
 
     return this.meetingService.hostMeeting(hostMeetingInput);
+  }
+
+  @Mutation((returns) => Meeting, { nullable: true })
+  @UseGuards(ActivatedUserGuard)
+  async toggleMeetingMicAndCam(
+    @Args('toggleMeetingMicAndCamInput') input: toggleMeetingMicAndCamInput,
+    @CurrentUser() currentUser: User,
+  ) {
+    return await this.meetingService.toggleMeetingMicAndCam(input, currentUser);
   }
 
   @Mutation((returns) => Meeting, { nullable: true })

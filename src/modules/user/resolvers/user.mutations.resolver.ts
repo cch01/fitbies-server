@@ -20,7 +20,7 @@ import { SessionService } from 'src/modules/session/session.service';
 import { PubSubEngine } from 'graphql-subscriptions';
 import { GeneralUserGuard } from 'src/guards/general.user.guard';
 
-//TODO: register as registered User, shut up ppl in meeting
+//TODO: shut up ppl in meeting
 @Resolver()
 @UseGuards(SessionHandler)
 export class UserMutationsResolver {
