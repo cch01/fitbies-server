@@ -7,6 +7,7 @@ import {
   SignInInput,
   SignUpInput,
   UpdateUserInput,
+  UpgradeAnonymousUserInput,
 } from './dto/user.input';
 import { User, UserDocument, UserType } from './user.model';
 import {
@@ -106,6 +107,47 @@ export class UserService {
     }
 
     return user.set(rest).save();
+  }
+
+  async upgradeAnonymousUser(
+    { userId, ...input }: UpgradeAnonymousUserInput,
+    currentUser: User,
+  ): Promise<User> {
+    const targetUser = await this.userModel.findById(userId);
+    if (targetUser.type == UserType.CLIENT) {
+      throw new ApolloError('Invalid user');
+    }
+    const isPermitToWrite =
+      targetUser &&
+      (await this.isPermitToWriteUser(currentUser, targetUser._id));
+
+    if (!isPermitToWrite) {
+      throw new ApolloError('Access denied');
+    }
+
+    const encryptedPw = bcrypt.hashSync(input.password, bcrypt.genSaltSync(10));
+    const emailIsUsed = !_.isEmpty(
+      await this.userModel.find({
+        email: input.email,
+      }),
+    );
+    if (emailIsUsed) {
+      throw new ApolloError('This email has been used.');
+    }
+    const activationToken = EmailHelper.generateEmailToken({
+      email: input.email,
+    });
+    EmailHelper.sendActivationEmail(input.email, activationToken);
+
+    return await targetUser
+      .set({
+        ...input,
+        activationToken,
+        password: encryptedPw,
+        isActivated: false,
+        type: UserType.CLIENT,
+      })
+      .save();
   }
 
   async signIn(signInInput: SignInInput): Promise<SignInPayload> {
@@ -261,6 +303,9 @@ export class UserService {
     user: User,
     targetUserId: string,
   ): Promise<boolean> {
+    if (!user || !targetUserId) {
+      return false;
+    }
     switch (user.type) {
       case 'ADMIN':
         return true;

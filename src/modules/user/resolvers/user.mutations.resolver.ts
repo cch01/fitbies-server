@@ -8,6 +8,7 @@ import {
   SignInInput,
   SignUpInput,
   UpdateUserInput,
+  UpgradeAnonymousUserInput,
 } from '../dto/user.input';
 import { SignInPayload } from '../dto/user.payload';
 import { User, UserDocument } from '../user.model';
@@ -57,6 +58,19 @@ export class UserMutationsResolver {
     return await this.userService.createAnonymousUser(
       anonymousSignUpInput,
       ctx.token,
+    );
+  }
+
+  @Mutation((returns) => User)
+  @UseGuards(GeneralUserGuard)
+  async upgradeAnonymousUser(
+    @Args('upgradeAnonymousUserInput')
+    upgradeAnonymousUserInput: UpgradeAnonymousUserInput,
+    @CurrentUser() currentUser: User,
+  ): Promise<User> {
+    return await this.userService.upgradeAnonymousUser(
+      upgradeAnonymousUserInput,
+      currentUser,
     );
   }
 

@@ -64,3 +64,24 @@ export class AnonymousSignUpInput {
   @Field()
   nickname: string;
 }
+
+@InputType()
+export class UpgradeAnonymousUserInput {
+  @Field()
+  userId: string;
+
+  @Field()
+  firstName: string;
+
+  @Field()
+  lastName: string;
+
+  @Field()
+  email: string;
+
+  @Field()
+  password: string;
+
+  @Field({ nullable: true })
+  nickname: string;
+}
