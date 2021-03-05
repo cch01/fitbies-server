@@ -170,6 +170,7 @@ type Mutation {
   activateAccount(token: String!): User
   resendActivationEmail(userId: ID!): User
   anonymousSignUp(anonymousSignUpInput: AnonymousSignUpInput!): User!
+  upgradeAnonymousUser(upgradeAnonymousUserInput: UpgradeAnonymousUserInput!): User!
   signIn(signInInput: SignInInput!): SignInPayload
   signOut: Boolean
   updateUser(updateUserInput: UpdateUserInput!): User
@@ -194,6 +195,15 @@ input SignUpInput {
 
 input AnonymousSignUpInput {
   nickname: String!
+}
+
+input UpgradeAnonymousUserInput {
+  userId: String!
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  nickname: String
 }
 
 input SignInInput {
