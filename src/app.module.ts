@@ -8,6 +8,7 @@ import { SessionModule } from './modules/session/session.module';
 import { MeetingModule } from './modules/meeting/meeting.module';
 import { PubSubModule } from './pub.sub/pub.sub.module';
 import * as _ from 'lodash';
+
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.DB_CONNECTION_URI, {

@@ -37,14 +37,14 @@ export class MeetingSubscriptionsResolver {
       input,
       context,
     ) {
-      const result = await this.meetingService.checkMeetingEventsPayload(
+      const shouldDispatch = await this.meetingService.checkMeetingEventsPayload(
         meetingChannel,
         input,
         context,
       );
 
-      console.log(`dispatch in ${input.meetingId}`, result);
-      return result;
+      console.log(`dispatch in ${input.meetingId}`, shouldDispatch);
+      return shouldDispatch;
     },
   })
   @UseGuards(GeneralUserGuard)

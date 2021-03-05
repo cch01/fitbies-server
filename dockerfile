@@ -11,6 +11,6 @@ COPY . .
 
 EXPOSE 3000 3001
 
-CMD ["sh", "-c", "npx migrate-mongo up && yarn start"]
+CMD ["sh", "-c", "yarn install && npx migrate-mongo up && yarn start"]
 
 
