@@ -19,6 +19,14 @@ export class Participant {
   nickname?: string;
 
   @Field({ nullable: true })
+  @Prop()
+  isCamOn?: boolean;
+
+  @Field({ nullable: true })
+  @Prop()
+  isMicOn?: boolean;
+
+  @Field({ nullable: true })
   @Prop({ default: () => new Date() })
   joinedAt?: Date;
 
@@ -60,13 +68,13 @@ export class Meeting {
   })
   participants?: Participant[];
 
-  @Field()
+  @Field({ nullable: true })
   @Prop()
-  isMuted: boolean;
+  isMicOn: boolean;
 
-  @Field()
+  @Field({ nullable: true })
   @Prop()
-  IsCamOn: boolean;
+  isCamOn: boolean;
 
   @Field((type) => [ID], { nullable: true })
   @Prop({

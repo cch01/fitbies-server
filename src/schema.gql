@@ -88,6 +88,8 @@ enum UserChannelEventType {
 type Participant {
   _id: ID!
   nickname: String
+  isCamOn: Boolean
+  isMicOn: Boolean
   joinedAt: DateTime
   leftAt: DateTime
   isLeft: Boolean
@@ -99,8 +101,8 @@ type Meeting {
   meetingId: String
   initiator: User
   participants: [Participant!]
-  isMuted: Boolean!
-  IsCamOn: Boolean!
+  isMicOn: Boolean
+  isCamOn: Boolean
   blockList: [ID!]
   passCode: String
   endedAt: DateTime
@@ -178,7 +180,8 @@ type Mutation {
   updateUser(updateUserInput: UpdateUserInput!): User
   resetPassword(resetPasswordInput: ResetPasswordInput!): User
   hostMeeting(hostMeetingInput: HostMeetingInput!): Meeting
-  toggleMeetingMicAndCam(toggleMeetingMicAndCamInput: toggleMeetingMicAndCamInput!): Meeting
+  toggleParticipantMicAndCam(toggleParticipantMicAndCamInput: ToggleParticipantMicAndCamInput!): Meeting
+  toggleMeetingMicAndCam(toggleMeetingMicAndCamInput: ToggleMeetingMicAndCamInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
   endMeeting(userId: ID!, meetingId: String!): Meeting
   leaveMeeting(userId: ID!, meetingId: String!): Meeting!
@@ -231,20 +234,29 @@ input ResetPasswordInput {
 input HostMeetingInput {
   initiatorId: ID!
   passCode: String
-  isMuted: Boolean!
-  IsCamOn: Boolean!
+  isMicOn: Boolean!
+  isCamOn: Boolean!
 }
 
-input toggleMeetingMicAndCamInput {
+input ToggleParticipantMicAndCamInput {
+  participantId: String!
+  meetingId: String!
+  isMicOn: Boolean!
+  isCamOn: Boolean!
+}
+
+input ToggleMeetingMicAndCamInput {
   meetingId: String!
   isCamOn: Boolean!
-  isMuted: Boolean!
+  isMicOn: Boolean!
 }
 
 input JoinMeetingInput {
   meetingId: String!
   joinerId: ID!
   passCode: String
+  isCamOn: Boolean!
+  isMicOn: Boolean!
 }
 
 input BlockUserInput {

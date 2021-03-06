@@ -14,7 +14,8 @@ import {
   InviteMeetingInput,
   JoinMeetingInput,
   SendMeetingMessageInput,
-  toggleMeetingMicAndCamInput,
+  ToggleMeetingMicAndCamInput,
+  ToggleParticipantMicAndCamInput,
 } from './dto/meeting.input';
 import {
   MeetingEventsPayload,
@@ -37,21 +38,21 @@ export class MeetingService {
 
   async hostMeeting({
     initiatorId: initiator,
-    isMuted,
-    IsCamOn,
+    isMicOn,
+    isCamOn,
     passCode,
   }: HostMeetingInput): Promise<Meeting> {
     return new this.meetingModel({
       initiator,
-      isMuted,
-      IsCamOn,
+      isMicOn,
+      isCamOn,
       passCode,
       participants: [{ _id: initiator }],
     }).save();
   }
 
   async joinMeeting(
-    { meetingId, joinerId, passCode }: JoinMeetingInput,
+    { meetingId, joinerId, passCode, isCamOn, isMicOn }: JoinMeetingInput,
     currentUser: User,
   ): Promise<Meeting> {
     const meeting = await await this.meetingModel.findOne({
@@ -81,7 +82,7 @@ export class MeetingService {
     );
 
     if (!joinedRecord) {
-      const newRecord = { _id: joinerId };
+      const newRecord = { _id: joinerId, isMicOn, isCamOn };
       meeting.participants.push(newRecord);
       updatedMeeting = await meeting.save();
     } else {
@@ -95,6 +96,8 @@ export class MeetingService {
           $set: {
             'participants.$.joinedAt': new Date(),
             'participants.$.isLeft': false,
+            'participants.$.isCamOn': isCamOn,
+            'participants.$.isMicOn': isMicOn,
           },
         },
         { useFindAndModify: true, new: true },
@@ -111,7 +114,7 @@ export class MeetingService {
   }
 
   async toggleMeetingMicAndCam(
-    { meetingId, ...input }: toggleMeetingMicAndCamInput,
+    { meetingId, ...input }: ToggleMeetingMicAndCamInput,
     currentUser: User,
   ): Promise<Meeting> {
     const targetMeeting = await this.meetingModel.findOne({
@@ -125,6 +128,43 @@ export class MeetingService {
     if (!isPermitToWriteUser) throw new ApolloError('Access denied');
 
     return await targetMeeting.set({ ...input }).save();
+  }
+
+  async toggleParticipantMicAndCam(
+    {
+      meetingId,
+      participantId,
+      isCamOn,
+      isMicOn,
+    }: ToggleParticipantMicAndCamInput,
+    currentUser: User,
+  ): Promise<Meeting> {
+    const targetMeeting = await this.meetingModel.findOne({
+      meetingId,
+      endedAt: null,
+      participants: { $elemMatch: { _id: participantId, isLeft: false } },
+    });
+    if (!targetMeeting)
+      throw new ApolloError('Meeting not found / participant left');
+    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
+      currentUser,
+      targetMeeting.initiator,
+    );
+    if (!isPermitToWriteUser) throw new ApolloError('Access denied');
+    return await this.meetingModel.findOneAndUpdate(
+      {
+        meetingId,
+        endedAt: null,
+        participants: { $elemMatch: { _id: participantId } },
+      },
+      {
+        $set: {
+          'participants.$.isCamOn': isCamOn,
+          'participants.$.isMicOn': isMicOn,
+        },
+      },
+      { useFindAndModify: true, new: true },
+    );
   }
 
   async endMeeting(
