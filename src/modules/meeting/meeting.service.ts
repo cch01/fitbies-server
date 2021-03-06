@@ -1,29 +1,29 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import {
-  ApolloError,
-  ForbiddenError,
-  PubSubEngine,
-} from 'apollo-server-express';
+import { PubSubEngine } from 'graphql-subscriptions';
 import { Model } from 'mongoose';
-import { User, UserDocument } from '../user/user.model';
+import { UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
-import {
-  BlockUserInput,
-  HostMeetingInput,
-  InviteMeetingInput,
-  JoinMeetingInput,
-  SendMeetingMessageInput,
-} from './dto/meeting.input';
-import {
-  MeetingEventsPayload,
-  MeetingEventType,
-  MeetingMessage,
-} from './dto/meeting.payload';
-import { Meeting, MeetingDocument } from './meeting.model';
-import * as _ from 'lodash';
-import EmailHelper from 'src/utils/email.helper';
-import { UserChannelEventType } from '../user/dto/user.payload';
+import { MeetingDocument } from './meeting.model';
+import { blockMeetingUser } from './services/blockMeetingUser';
+import { checkMeetingEventsPayload } from './services/checkMeetingEventsPayload';
+import { endMeeting } from './services/endMeeting';
+import { hostMeeting } from './services/hostMeeting';
+import { inviteUserToMeeting } from './services/inviteUserToMeeting';
+import { joinMeeting } from './services/joinMeeting';
+import { leaveMeeting } from './services/leaveMeeting';
+import { meeting } from './services/meeting';
+import { sendMeetingMessage } from './services/sendMeetingMessage';
+import { toggleMeetingMicAndCam } from './services/toggleMeetingMicAndCam';
+import { toggleParticipantMicAndCam } from './services/toggleParticipantMicAndCam';
+import { unblockMeetingUser } from './services/unblockMeetingUser';
+
+export interface MeetingServiceCtx {
+  meetingModel: Model<MeetingDocument>;
+  userModel: Model<UserDocument>;
+  pubSub: PubSubEngine;
+  userService: UserService;
+}
 
 @Injectable()
 export class MeetingService {
@@ -34,398 +34,34 @@ export class MeetingService {
     private readonly userService: UserService,
   ) {}
 
-  async hostMeeting({
-    initiatorId: initiator,
-    passCode,
-  }: HostMeetingInput): Promise<Meeting> {
-    const newMeeting = new this.meetingModel({
-      initiator,
-      passCode,
-      participants: [{ _id: initiator }],
-    });
+  private readonly ctx = {
+    meetingModel: this.meetingModel,
+    userModel: this.userModel,
+    pubSub: this.pubSub,
+    userService: this.userService,
+  };
 
-    return newMeeting.save();
-  }
+  blockMeetingUser = blockMeetingUser(this.ctx);
 
-  async joinMeeting(
-    { meetingId, joinerId, passCode }: JoinMeetingInput,
-    currentUser: User,
-  ): Promise<Meeting> {
-    const meeting = await await this.meetingModel.findOne({
-      meetingId,
-      endedAt: null,
-    });
+  checkMeetingEventsPayload = checkMeetingEventsPayload(this.ctx);
 
-    if (!meeting || meeting.endedAt) {
-      throw new ApolloError('Meeting not found');
-    }
+  endMeeting = endMeeting(this.ctx);
 
-    const isBlocked = meeting.blockList.some(
-      (_id) => _id.toString() === joinerId.toString(),
-    );
+  hostMeeting = hostMeeting(this.ctx);
 
-    if (isBlocked) {
-      throw new ForbiddenError('You have been blocked in this meeting');
-    }
+  inviteUserToMeeting = inviteUserToMeeting(this.ctx);
 
-    if (meeting.passCode && meeting.passCode !== passCode) {
-      throw new ForbiddenError('Invalid pass code');
-    }
+  joinMeeting = joinMeeting(this.ctx);
 
-    let updatedMeeting;
-    const joinedRecord = meeting.participants.find(
-      (_p) => _p._id.toString() === joinerId,
-    );
+  leaveMeeting = leaveMeeting(this.ctx);
 
-    if (!joinedRecord) {
-      const newRecord = { _id: joinerId };
-      meeting.participants.push(newRecord);
-      updatedMeeting = await meeting.save();
-    } else {
-      updatedMeeting = await this.meetingModel.findOneAndUpdate(
-        {
-          meetingId,
-          endedAt: null,
-          participants: { $elemMatch: { _id: joinerId } },
-        },
-        {
-          $set: {
-            'participants.$.joinedAt': new Date(),
-            'participants.$.isLeft': false,
-          },
-        },
-        { useFindAndModify: true, new: true },
-      );
-    }
+  meeting = meeting(this.ctx);
 
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.USER_JOINED,
-      currentUser,
-      updatedMeeting,
-    );
+  sendMeetingMessage = sendMeetingMessage(this.ctx);
 
-    return updatedMeeting;
-  }
+  toggleMeetingMicAndCam = toggleMeetingMicAndCam(this.ctx);
 
-  async endMeeting(
-    meetingId: string,
-    userId: string,
-    currentUser: User,
-  ): Promise<Meeting> {
-    const meeting = await this.meetingModel.findOne({
-      meetingId,
-      initiator: userId,
-      endedAt: null,
-    });
+  toggleParticipantMicAndCam = toggleParticipantMicAndCam(this.ctx);
 
-    if (!meeting) {
-      throw new ApolloError('meeting not found');
-    }
-
-    if (meeting.endedAt) {
-      throw new ApolloError('meeting has been ended already');
-    }
-
-    const updatedParticipants = meeting.toObject().participants.map((_p) => ({
-      ..._p,
-      isLeft: true,
-      leftAt: _p.leftAt || new Date(),
-    }));
-
-    meeting
-      .set({ endedAt: new Date(), participants: updatedParticipants })
-      .save();
-
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.END_MEETING,
-      currentUser,
-      meeting,
-    );
-
-    return meeting;
-  }
-
-  async leaveMeeting(
-    meetingId: string,
-    userId: string,
-    currentUser: User,
-  ): Promise<Meeting> {
-    const meeting = await this.meetingModel.findOne({
-      meetingId,
-      participants: { $elemMatch: { _id: userId, isLeft: false } },
-      endedAt: null,
-    });
-    if (!meeting) {
-      throw new ApolloError(
-        'Meeting not found / you are not joining this meeting',
-      );
-    }
-
-    const updatedMeeting = await this.meetingModel.findOneAndUpdate(
-      {
-        meetingId,
-        participants: { $elemMatch: { _id: userId } },
-        endedAt: null,
-      },
-      {
-        $set: {
-          'participants.$.leftAt': new Date(),
-          'participants.$.isLeft': true,
-        },
-      },
-      { useFindAndModify: true, new: true },
-    );
-
-    const isUserLeft = meeting.participants.find((_p) => _p._id === userId)
-      ?.isLeft;
-
-    console.log('isUserLeft', isUserLeft);
-    !isUserLeft &&
-      (await this.createMeetingEventsAndDispatch(
-        MeetingEventType.LEAVE_MEETING,
-        currentUser,
-        updatedMeeting,
-      ));
-
-    setTimeout(async () => {
-      const meeting = await this.meetingModel.findOne({
-        meetingId,
-        endedAt: null,
-      });
-      if (!meeting) return;
-      const usersInMeeting = meeting?.participants.some((p) => !p.isLeft);
-      if (!usersInMeeting) {
-        await meeting.set('endedAt', new Date()).save();
-      }
-    }, 30000);
-
-    return updatedMeeting;
-  }
-
-  async blockMeetingUser(
-    { initiatorId, meetingId, targetUserId }: BlockUserInput,
-    currentUser: User,
-  ): Promise<Meeting> {
-    const meeting = await this.meetingModel.findOne({
-      initiator: initiatorId,
-      meetingId,
-      endedAt: null,
-    });
-
-    const targetUser = await this.userModel.findById(targetUserId);
-
-    if (!targetUser) {
-      throw new ApolloError('Target user not found');
-    }
-
-    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
-      currentUser,
-      meeting.initiator,
-    );
-
-    if (!isPermitToWriteUser) {
-      throw new ForbiddenError('Access denied');
-    }
-
-    const isInBlockList = meeting.blockList.some(
-      (_id) => _id.toString() === targetUserId.toString(),
-    );
-
-    if (isInBlockList) {
-      throw new ApolloError('User already in block list');
-    }
-    const targetIndex = meeting.participants.findIndex(
-      (p) => p._id.toString() === targetUserId.toString() && !p.isLeft,
-    );
-
-    if (targetIndex > -1) meeting.participants[targetIndex].isLeft = true;
-
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.BLOCK_USER,
-      currentUser,
-      meeting,
-      null,
-      targetUser,
-    );
-
-    meeting.blockList.push(targetUserId);
-    return await meeting.save();
-  }
-
-  async unblockMeetingUser(
-    { initiatorId, meetingId, targetUserId }: BlockUserInput,
-    currentUser: User,
-  ): Promise<Meeting> {
-    const meeting = await this.meetingModel.findOne({
-      initiator: initiatorId,
-      meetingId,
-      endedAt: null,
-    });
-
-    const targetUser = await this.userModel.findById(targetUserId);
-
-    if (!targetUser) {
-      throw new ApolloError('Target user not found');
-    }
-
-    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
-      currentUser,
-      meeting.initiator,
-    );
-
-    if (!isPermitToWriteUser) {
-      throw new ForbiddenError('Access denied');
-    }
-
-    const targetUserIndex = meeting.blockList.findIndex(
-      (_id) => _id.toString() === targetUserId.toString(),
-    );
-
-    if (targetUserIndex < 0) {
-      throw new ApolloError('User is not in block list');
-    }
-
-    meeting.blockList.splice(targetUserIndex, 1);
-    console.log(meeting.blockList);
-
-    return await meeting.save();
-  }
-
-  async meeting(meetingId: string, currentUser: User): Promise<Meeting> {
-    const meeting = await this.meetingModel.findOne({ meetingId });
-    if (meeting.endedAt) {
-      const isParticipant = meeting.participants.some(
-        (p) => p._id.toString() === currentUser._id.toString(),
-      );
-      if (!isParticipant && !this.userService.isAdmin(currentUser)) {
-        throw new ForbiddenError('Access denied');
-      }
-    }
-    return meeting;
-  }
-
-  inviteMeetingByEmail(
-    targetEmail: string,
-    nickname: string,
-    meetingId: string,
-    passCode?: string,
-  ) {
-    EmailHelper.sendMeetingInvitationEmail(
-      nickname,
-      targetEmail,
-      meetingId,
-      passCode,
-    );
-  }
-
-  async inviteUserToMeeting(
-    { userId, meetingId, email }: InviteMeetingInput,
-    currentUser: User,
-  ): Promise<Meeting> {
-    const targetMeeting = await this.meetingModel.findOne({
-      meetingId,
-      endedAt: null,
-    });
-    if (!targetMeeting || targetMeeting.endedAt) {
-      throw new ApolloError('Meeting not found');
-    }
-    const isPermitToWriteUser = await this.userService.isPermitToWriteUser(
-      currentUser,
-      targetMeeting.initiator,
-    );
-
-    if (!isPermitToWriteUser) {
-      throw new ForbiddenError('Access denied');
-    }
-
-    let targetUser;
-    if (userId) {
-      targetUser = await this.userModel.findById(userId);
-      // if (targetUser.status === UserCurrentStates.OFFLINE) {
-      //   throw new ApolloError('User offline');
-      // }
-    }
-
-    email &&
-      this.inviteMeetingByEmail(
-        email,
-        currentUser.nickname,
-        meetingId,
-        targetMeeting.passCode,
-      );
-
-    if (userId) {
-      await this.userService.createUserEventsAndDispatch(
-        targetUser,
-        UserChannelEventType.MEETING_INVITATION,
-        undefined,
-        undefined,
-        { meetingId, inviter: currentUser },
-      );
-    }
-
-    return targetMeeting;
-  }
-
-  async createMeetingEventsAndDispatch(
-    type: MeetingEventType,
-    from: User,
-    toMeeting: Meeting,
-    message?: MeetingMessage,
-    userToBeKickedOut?: User,
-  ): Promise<MeetingEventsPayload> {
-    const meetingEventsPayload = {
-      type,
-      from,
-      toMeeting,
-      message,
-      userToBeKickedOut,
-    };
-    this.pubSub.publish('meetingChannel', {
-      meetingChannel: meetingEventsPayload,
-    });
-    return meetingEventsPayload;
-  }
-
-  async checkMeetingEventsPayload(
-    { type }: MeetingEventsPayload,
-    { meetingId }: { meetingId: string },
-    ctx: any,
-  ): Promise<boolean> {
-    const meeting = await this.meetingModel.findOne({
-      meetingId,
-      participants: { $elemMatch: { _id: ctx.user._id } },
-    });
-    if (!meeting) return false;
-    console.log('subscribing user', ctx.user._id);
-    return true;
-  }
-
-  async sendMeetingMessage(
-    { content, meetingId }: SendMeetingMessageInput,
-    currentUser: User,
-  ): Promise<MeetingMessage> {
-    const meeting = await this.meetingModel.findOne({
-      meetingId,
-      participants: { $elemMatch: { _id: currentUser._id } },
-      endedAt: null,
-    });
-    if (!meeting) {
-      throw new ApolloError('Meeting not found');
-    }
-
-    const meetingMsg = {
-      content,
-      sentAt: new Date(),
-    };
-
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.MESSAGE,
-      currentUser,
-      meeting,
-      meetingMsg,
-    );
-
-    return meetingMsg;
-  }
+  unblockMeetingUser = unblockMeetingUser(this.ctx);
 }

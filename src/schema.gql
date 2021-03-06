@@ -88,6 +88,8 @@ enum UserChannelEventType {
 type Participant {
   _id: ID!
   nickname: String
+  isCamOn: Boolean
+  isMicOn: Boolean
   joinedAt: DateTime
   leftAt: DateTime
   isLeft: Boolean
@@ -99,6 +101,8 @@ type Meeting {
   meetingId: String
   initiator: User
   participants: [Participant!]
+  isMicOn: Boolean
+  isCamOn: Boolean
   blockList: [ID!]
   passCode: String
   endedAt: DateTime
@@ -125,12 +129,25 @@ type MeetingMessage {
   sentAt: DateTime
 }
 
+type MeetingSettings {
+  isMicOn: Boolean!
+  isCamOn: Boolean!
+}
+
+type ParticipantSettings {
+  participantId: String!
+  isMicOn: Boolean!
+  isCamOn: Boolean!
+}
+
 type MeetingEventsPayload {
   type: MeetingEventType!
   from: User!
   toMeeting: Meeting
   message: MeetingMessage
   userToBeKickedOut: User
+  meetingSettings: MeetingSettings
+  participantSettings: ParticipantSettings
 }
 
 enum MeetingEventType {
@@ -139,6 +156,8 @@ enum MeetingEventType {
   BLOCK_USER
   END_MEETING
   LEAVE_MEETING
+  TOGGLE_MEETING_SETTINGS
+  TOGGLE_PARTICIPANT_SETTINGS
 }
 
 type Query {
@@ -176,6 +195,8 @@ type Mutation {
   updateUser(updateUserInput: UpdateUserInput!): User
   resetPassword(resetPasswordInput: ResetPasswordInput!): User
   hostMeeting(hostMeetingInput: HostMeetingInput!): Meeting
+  toggleParticipantMicAndCam(toggleParticipantMicAndCamInput: ToggleParticipantMicAndCamInput!): Meeting
+  toggleMeetingMicAndCam(toggleMeetingMicAndCamInput: ToggleMeetingMicAndCamInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
   endMeeting(userId: ID!, meetingId: String!): Meeting
   leaveMeeting(userId: ID!, meetingId: String!): Meeting!
@@ -228,12 +249,29 @@ input ResetPasswordInput {
 input HostMeetingInput {
   initiatorId: ID!
   passCode: String
+  isMicOn: Boolean!
+  isCamOn: Boolean!
+}
+
+input ToggleParticipantMicAndCamInput {
+  participantId: String!
+  meetingId: String!
+  isMicOn: Boolean!
+  isCamOn: Boolean!
+}
+
+input ToggleMeetingMicAndCamInput {
+  meetingId: String!
+  isCamOn: Boolean!
+  isMicOn: Boolean!
 }
 
 input JoinMeetingInput {
   meetingId: String!
   joinerId: ID!
   passCode: String
+  isCamOn: Boolean!
+  isMicOn: Boolean!
 }
 
 input BlockUserInput {

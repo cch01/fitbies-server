@@ -30,6 +30,15 @@ import EmailHelper from 'src/utils/email.helper';
 import * as jwt from 'jsonwebtoken';
 import * as _ from 'lodash';
 import { SessionDocument } from '../session/session.model';
+
+interface CreateUserEventsAndDispatchInput {
+  to: User;
+  eventType: UserChannelEventType;
+  personalMessage?: PersonalMessage;
+  friendState?: UserState;
+  meetingInvitation?: MeetingInvitation;
+}
+
 @Injectable()
 export class UserService {
   constructor(
@@ -169,13 +178,13 @@ export class UserService {
     return bcrypt.compareSync(password, user.password);
   }
 
-  createUserEventsAndDispatch(
-    to: User,
-    eventType: UserChannelEventType,
-    personalMessage?: PersonalMessage,
-    friendState?: UserState,
-    meetingInvitation?: MeetingInvitation,
-  ): UserChannelPayload {
+  createUserEventsAndDispatch({
+    to,
+    eventType,
+    personalMessage,
+    friendState,
+    meetingInvitation,
+  }: CreateUserEventsAndDispatchInput): UserChannelPayload {
     const userEventPayload = {
       to,
       eventType,

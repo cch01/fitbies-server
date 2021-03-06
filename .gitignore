@@ -36,3 +36,4 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 staging-zoomed-mongo.pem
+zoomed-mongo.pem

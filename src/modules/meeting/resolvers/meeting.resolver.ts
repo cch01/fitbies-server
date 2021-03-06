@@ -62,9 +62,7 @@ export class MeetingResolver {
   @ResolveField((returns) => String)
   @UseGuards(GeneralUserGuard)
   async participants(@Parent() meeting: Meeting): Promise<Participant[]> {
-    return (await this.userLoaders.user.loadMany(
-      _.map(meeting.participants, '_id'),
-    )) as Participant[];
+    return meeting.participants;
   }
 
   @ResolveField((returns) => String)

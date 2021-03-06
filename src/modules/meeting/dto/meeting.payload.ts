@@ -8,6 +8,8 @@ export enum MeetingEventType {
   BLOCK_USER = 'BLOCK_USER',
   END_MEETING = 'END_MEETING',
   LEAVE_MEETING = 'LEAVE_MEETING',
+  TOGGLE_MEETING_SETTINGS = 'TOGGLE_MEETING_SETTINGS',
+  TOGGLE_PARTICIPANT_SETTINGS = 'TOGGLE_PARTICIPANT_SETTINGS',
 }
 
 registerEnumType(MeetingEventType, {
@@ -21,6 +23,27 @@ export class MeetingMessage {
 
   @Field((type) => Date, { nullable: true })
   sentAt: Date;
+}
+
+@ObjectType()
+export class MeetingSettings {
+  @Field()
+  isMicOn: boolean;
+
+  @Field()
+  isCamOn: boolean;
+}
+
+@ObjectType()
+export class ParticipantSettings {
+  @Field()
+  participantId: string;
+
+  @Field()
+  isMicOn: boolean;
+
+  @Field()
+  isCamOn: boolean;
 }
 
 @ObjectType()
@@ -39,4 +62,10 @@ export class MeetingEventsPayload {
 
   @Field((type) => User, { nullable: true })
   userToBeKickedOut?: User;
+
+  @Field((type) => MeetingSettings, { nullable: true })
+  meetingSettings: MeetingSettings;
+
+  @Field((type) => ParticipantSettings, { nullable: true })
+  participantSettings: ParticipantSettings;
 }
