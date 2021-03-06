@@ -21,11 +21,22 @@ import {
   MeetingEventsPayload,
   MeetingEventType,
   MeetingMessage,
+  MeetingSettings,
+  ParticipantSettings,
 } from './dto/meeting.payload';
 import { Meeting, MeetingDocument } from './meeting.model';
 import * as _ from 'lodash';
 import EmailHelper from 'src/utils/email.helper';
 import { UserChannelEventType } from '../user/dto/user.payload';
+interface CreateMeetingEventsAndDispatchInput {
+  type: MeetingEventType;
+  from: User;
+  toMeeting: Meeting;
+  message?: MeetingMessage;
+  userToBeKickedOut?: User;
+  meetingSettings?: MeetingSettings;
+  participantSettings?: ParticipantSettings;
+}
 
 @Injectable()
 export class MeetingService {
@@ -104,11 +115,11 @@ export class MeetingService {
       );
     }
 
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.USER_JOINED,
-      currentUser,
-      updatedMeeting,
-    );
+    await this.createMeetingEventsAndDispatch({
+      type: MeetingEventType.USER_JOINED,
+      from: currentUser,
+      toMeeting: updatedMeeting,
+    });
 
     return updatedMeeting;
   }
@@ -127,7 +138,16 @@ export class MeetingService {
     );
     if (!isPermitToWriteUser) throw new ApolloError('Access denied');
 
-    return await targetMeeting.set({ ...input }).save();
+    const updatedMeeting = await targetMeeting.set({ ...input }).save();
+
+    await this.createMeetingEventsAndDispatch({
+      type: MeetingEventType.TOGGLE_MEETING_SETTINGS,
+      from: currentUser,
+      toMeeting: updatedMeeting,
+      meetingSettings: input,
+    });
+
+    return updatedMeeting;
   }
 
   async toggleParticipantMicAndCam(
@@ -151,7 +171,7 @@ export class MeetingService {
       targetMeeting.initiator,
     );
     if (!isPermitToWriteUser) throw new ApolloError('Access denied');
-    return await this.meetingModel.findOneAndUpdate(
+    const updatedMeeting = await this.meetingModel.findOneAndUpdate(
       {
         meetingId,
         endedAt: null,
@@ -165,6 +185,14 @@ export class MeetingService {
       },
       { useFindAndModify: true, new: true },
     );
+    await this.createMeetingEventsAndDispatch({
+      type: MeetingEventType.TOGGLE_PARTICIPANT_SETTINGS,
+      from: currentUser,
+      toMeeting: updatedMeeting,
+      participantSettings: { participantId, isCamOn, isMicOn },
+    });
+
+    return updatedMeeting;
   }
 
   async endMeeting(
@@ -196,11 +224,11 @@ export class MeetingService {
       .set({ endedAt: new Date(), participants: updatedParticipants })
       .save();
 
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.END_MEETING,
-      currentUser,
-      meeting,
-    );
+    await this.createMeetingEventsAndDispatch({
+      type: MeetingEventType.END_MEETING,
+      from: currentUser,
+      toMeeting: meeting,
+    });
 
     return meeting;
   }
@@ -241,11 +269,11 @@ export class MeetingService {
 
     console.log('isUserLeft', isUserLeft);
     !isUserLeft &&
-      (await this.createMeetingEventsAndDispatch(
-        MeetingEventType.LEAVE_MEETING,
-        currentUser,
-        updatedMeeting,
-      ));
+      (await this.createMeetingEventsAndDispatch({
+        type: MeetingEventType.LEAVE_MEETING,
+        from: currentUser,
+        toMeeting: updatedMeeting,
+      }));
 
     setTimeout(async () => {
       const meeting = await this.meetingModel.findOne({
@@ -300,13 +328,12 @@ export class MeetingService {
 
     if (targetIndex > -1) meeting.participants[targetIndex].isLeft = true;
 
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.BLOCK_USER,
-      currentUser,
-      meeting,
-      null,
-      targetUser,
-    );
+    await this.createMeetingEventsAndDispatch({
+      type: MeetingEventType.BLOCK_USER,
+      from: currentUser,
+      toMeeting: meeting,
+      userToBeKickedOut: targetUser,
+    });
 
     meeting.blockList.push(targetUserId);
     return await meeting.save();
@@ -415,31 +442,33 @@ export class MeetingService {
       );
 
     if (userId) {
-      await this.userService.createUserEventsAndDispatch(
-        targetUser,
-        UserChannelEventType.MEETING_INVITATION,
-        undefined,
-        undefined,
-        { meetingId, inviter: currentUser },
-      );
+      await this.userService.createUserEventsAndDispatch({
+        to: targetUser,
+        eventType: UserChannelEventType.MEETING_INVITATION,
+        meetingInvitation: { meetingId, inviter: currentUser },
+      });
     }
 
     return targetMeeting;
   }
 
-  async createMeetingEventsAndDispatch(
-    type: MeetingEventType,
-    from: User,
-    toMeeting: Meeting,
-    message?: MeetingMessage,
-    userToBeKickedOut?: User,
-  ): Promise<MeetingEventsPayload> {
+  async createMeetingEventsAndDispatch({
+    type,
+    from,
+    toMeeting,
+    message,
+    userToBeKickedOut,
+    meetingSettings,
+    participantSettings,
+  }: CreateMeetingEventsAndDispatchInput): Promise<MeetingEventsPayload> {
     const meetingEventsPayload = {
       type,
       from,
       toMeeting,
       message,
       userToBeKickedOut,
+      meetingSettings,
+      participantSettings,
     };
     this.pubSub.publish('meetingChannel', {
       meetingChannel: meetingEventsPayload,
@@ -452,6 +481,7 @@ export class MeetingService {
     { meetingId }: { meetingId: string },
     ctx: any,
   ): Promise<boolean> {
+    //TODO meeting loader
     const meeting = await this.meetingModel.findOne({
       meetingId,
       participants: { $elemMatch: { _id: ctx.user._id } },
@@ -479,12 +509,12 @@ export class MeetingService {
       sentAt: new Date(),
     };
 
-    await this.createMeetingEventsAndDispatch(
-      MeetingEventType.MESSAGE,
-      currentUser,
-      meeting,
-      meetingMsg,
-    );
+    await this.createMeetingEventsAndDispatch({
+      type: MeetingEventType.MESSAGE,
+      from: currentUser,
+      toMeeting: meeting,
+      message: meetingMsg,
+    });
 
     return meetingMsg;
   }

@@ -129,12 +129,25 @@ type MeetingMessage {
   sentAt: DateTime
 }
 
+type MeetingSettings {
+  isMicOn: Boolean!
+  isCamOn: Boolean!
+}
+
+type ParticipantSettings {
+  participantId: String!
+  isMicOn: Boolean!
+  isCamOn: Boolean!
+}
+
 type MeetingEventsPayload {
   type: MeetingEventType!
   from: User!
   toMeeting: Meeting
   message: MeetingMessage
   userToBeKickedOut: User
+  meetingSettings: MeetingSettings
+  participantSettings: ParticipantSettings
 }
 
 enum MeetingEventType {
@@ -143,6 +156,8 @@ enum MeetingEventType {
   BLOCK_USER
   END_MEETING
   LEAVE_MEETING
+  TOGGLE_MEETING_SETTINGS
+  TOGGLE_PARTICIPANT_SETTINGS
 }
 
 type Query {
