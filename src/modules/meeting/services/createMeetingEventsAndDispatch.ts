@@ -1,7 +1,7 @@
 import { User } from 'src/modules/user/user.model';
 import { MeetingServiceCtx } from '../meeting.service';
 import {
-  MeetingEventsPayload,
+  MeetingChannelPayload,
   MeetingEventType,
   MeetingMessage,
   MeetingSettings,
@@ -29,8 +29,8 @@ export const createMeetingEventsAndDispatch = ({
   userToBeKickedOut,
   meetingSettings,
   participantSettings,
-}: CreateMeetingEventsAndDispatchInput): Promise<MeetingEventsPayload> => {
-  const meetingEventsPayload = {
+}: CreateMeetingEventsAndDispatchInput): Promise<MeetingChannelPayload> => {
+  const meetingChannelPayload = {
     type,
     from,
     toMeeting,
@@ -40,7 +40,7 @@ export const createMeetingEventsAndDispatch = ({
     participantSettings,
   };
   pubSub.publish('meetingChannel', {
-    meetingChannel: meetingEventsPayload,
+    meetingChannel: meetingChannelPayload,
   });
-  return meetingEventsPayload;
+  return meetingChannelPayload;
 };

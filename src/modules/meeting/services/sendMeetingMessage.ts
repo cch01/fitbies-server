@@ -23,14 +23,12 @@ export const sendMeetingMessage = (ctx: MeetingServiceCtx) => {
       content,
       sentAt: new Date(),
     };
-
     await createMeetingEventsAndDispatch(ctx)({
       type: MeetingEventType.MESSAGE,
       from: currentUser,
       toMeeting: meeting,
       message: meetingMsg,
     });
-
     return meetingMsg;
   };
 };
