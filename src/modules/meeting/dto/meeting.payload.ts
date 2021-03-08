@@ -47,7 +47,7 @@ export class ParticipantSettings {
 }
 
 @ObjectType()
-export class MeetingEventsPayload {
+export class MeetingChannelPayload {
   @Field((type) => MeetingEventType)
   type: MeetingEventType;
 

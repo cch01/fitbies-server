@@ -140,7 +140,7 @@ type ParticipantSettings {
   isCamOn: Boolean!
 }
 
-type MeetingEventsPayload {
+type MeetingChannelPayload {
   type: MeetingEventType!
   from: User!
   toMeeting: Meeting
@@ -294,5 +294,5 @@ input InviteMeetingInput {
 
 type Subscription {
   userChannel(userId: ID!): UserChannelPayload!
-  meetingChannel(meetingId: String!, userId: ID!): MeetingEventsPayload!
+  meetingChannel(meetingId: String!, userId: ID!): MeetingChannelPayload!
 }

@@ -14,7 +14,7 @@ import { UserService } from 'src/modules/user/user.service';
 import { MeetingDocument } from '../meeting.model';
 import { MeetingService } from '../meeting.service';
 import { GeneralUserGuard } from 'src/guards/general.user.guard';
-import { MeetingEventsPayload } from '../dto/meeting.payload';
+import { MeetingChannelPayload } from '../dto/meeting.payload';
 import { withUnsubscribe } from 'src/utils/withUnsubscribe';
 import { MeetingMutationsResolver } from './meeting.mutations.resolver';
 
@@ -23,21 +23,35 @@ import { MeetingMutationsResolver } from './meeting.mutations.resolver';
 export class MeetingSubscriptionsResolver {
   constructor(
     private readonly userService: UserService,
-    private readonly meetingService: MeetingService,
     private readonly meetingMutationsResolver: MeetingMutationsResolver,
     @InjectModel('meeting')
     private readonly meetingModel: Model<MeetingDocument>,
     @Inject('pubSub') private readonly pubSub: PubSubEngine,
   ) {}
 
-  @Subscription((returns) => MeetingEventsPayload, {
+  async checkMeetingChannelPayload(
+    { type }: MeetingChannelPayload,
+    { meetingId }: { meetingId: string },
+    ctx: any,
+  ): Promise<boolean> {
+    console.log('subscribing user', ctx.user._id);
+    const meeting = await this.meetingModel.findOne({ meetingId });
+    if (!meeting) return false;
+    const isUserInMeeting = meeting.participants.some(
+      (_p) => _p.isLeft && _p._id.toString() === ctx.user._id.toString(),
+    );
+    if (!isUserInMeeting) return false;
+    return true;
+  }
+
+  @Subscription((returns) => MeetingChannelPayload, {
     async filter(
       this: MeetingSubscriptionsResolver,
       { meetingChannel },
       input,
       context,
     ) {
-      const shouldDispatch = await this.meetingService.checkMeetingEventsPayload(
+      const shouldDispatch = await this.checkMeetingChannelPayload(
         meetingChannel,
         input,
         context,

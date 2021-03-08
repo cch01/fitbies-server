@@ -8,6 +8,7 @@ import { MeetingService } from './meeting.service';
 import { MeetingResolver } from './resolvers/meeting.resolver';
 import { MeetingMutationsResolver } from './resolvers/meeting.mutations.resolver';
 import { MeetingSubscriptionsResolver } from './resolvers/meeting.subscriptions.resolver';
+import { MeetingLoaders } from './meeting.loaders';
 
 @Module({
   providers: [
@@ -16,8 +17,9 @@ import { MeetingSubscriptionsResolver } from './resolvers/meeting.subscriptions.
     MeetingMutationsResolver,
     MeetingSubscriptionsResolver,
     MeetingResolver,
+    MeetingLoaders,
   ],
   imports: [MeetingModel, UserModule, SessionModule, PubSubModule],
-  exports: [MeetingModel, MeetingService],
+  exports: [MeetingModel, MeetingService, MeetingLoaders],
 })
 export class MeetingModule {}

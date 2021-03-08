@@ -6,7 +6,6 @@ import { UserDocument } from '../user/user.model';
 import { UserService } from '../user/user.service';
 import { MeetingDocument } from './meeting.model';
 import { blockMeetingUser } from './services/blockMeetingUser';
-import { checkMeetingEventsPayload } from './services/checkMeetingEventsPayload';
 import { endMeeting } from './services/endMeeting';
 import { hostMeeting } from './services/hostMeeting';
 import { inviteUserToMeeting } from './services/inviteUserToMeeting';
@@ -42,8 +41,6 @@ export class MeetingService {
   };
 
   blockMeetingUser = blockMeetingUser(this.ctx);
-
-  checkMeetingEventsPayload = checkMeetingEventsPayload(this.ctx);
 
   endMeeting = endMeeting(this.ctx);
 
