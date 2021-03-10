@@ -4,15 +4,23 @@ import { Meeting } from '../meeting.model';
 
 export const hostMeeting = ({ meetingModel }: MeetingServiceCtx) => async ({
   initiatorId: initiator,
-  isMicOn,
-  isCamOn,
+  isSelfMicOn,
+  isSelfCamOn,
+  isMeetingMicOn,
+  isMeetingCamOn,
   passCode,
 }: HostMeetingInput): Promise<Meeting> => {
   return new meetingModel({
     initiator,
-    isMicOn,
-    isCamOn,
+    isMicOn: isMeetingMicOn,
+    isCamOn: isMeetingCamOn,
     passCode,
-    participants: [{ _id: initiator }],
+    participants: [
+      {
+        _id: initiator,
+        isCamOn: isSelfCamOn,
+        isMicOn: isSelfMicOn,
+      },
+    ],
   }).save();
 };

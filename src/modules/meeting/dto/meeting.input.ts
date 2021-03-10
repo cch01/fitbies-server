@@ -9,10 +9,16 @@ export class HostMeetingInput {
   passCode?: string;
 
   @Field()
-  isMicOn: boolean;
+  isSelfMicOn: boolean;
 
   @Field()
-  isCamOn: boolean;
+  isSelfCamOn: boolean;
+  
+  @Field()
+  isMeetingMicOn: boolean;
+
+  @Field()
+  isMeetingCamOn: boolean;
 }
 
 @InputType()

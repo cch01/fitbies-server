@@ -249,8 +249,10 @@ input ResetPasswordInput {
 input HostMeetingInput {
   initiatorId: ID!
   passCode: String
-  isMicOn: Boolean!
-  isCamOn: Boolean!
+  isSelfMicOn: Boolean!
+  isSelfCamOn: Boolean!
+  isMeetingMicOn: Boolean!
+  isMeetingCamOn: Boolean!
 }
 
 input ToggleParticipantMicAndCamInput {
