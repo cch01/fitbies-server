@@ -20,11 +20,11 @@ export class Participant {
 
   @Field({ nullable: true })
   @Prop()
-  isCamOn?: boolean;
+  allowCam?: boolean;
 
   @Field({ nullable: true })
   @Prop()
-  isMicOn?: boolean;
+  allowMic?: boolean;
 
   @Field({ nullable: true })
   @Prop({ default: () => new Date() })
@@ -70,11 +70,11 @@ export class Meeting {
 
   @Field({ nullable: true })
   @Prop()
-  isMicOn: boolean;
+  allowMic: boolean;
 
   @Field({ nullable: true })
   @Prop()
-  isCamOn: boolean;
+  allowCam: boolean;
 
   @Field((type) => [ID], { nullable: true })
   @Prop({

@@ -28,10 +28,10 @@ export class MeetingMessage {
 @ObjectType()
 export class MeetingSettings {
   @Field()
-  isMicOn: boolean;
+  allowMic: boolean;
 
   @Field()
-  isCamOn: boolean;
+  allowCam: boolean;
 }
 
 @ObjectType()
@@ -40,10 +40,10 @@ export class ParticipantSettings {
   participantId: string;
 
   @Field()
-  isMicOn: boolean;
+  allowMic: boolean;
 
   @Field()
-  isCamOn: boolean;
+  allowCam: boolean;
 }
 
 @ObjectType()

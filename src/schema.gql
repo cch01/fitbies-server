@@ -88,8 +88,8 @@ enum UserChannelEventType {
 type Participant {
   _id: ID!
   nickname: String
-  isCamOn: Boolean
-  isMicOn: Boolean
+  allowCam: Boolean
+  allowMic: Boolean
   joinedAt: DateTime
   leftAt: DateTime
   isLeft: Boolean
@@ -101,8 +101,8 @@ type Meeting {
   meetingId: String
   initiator: User
   participants: [Participant!]
-  isMicOn: Boolean
-  isCamOn: Boolean
+  allowMic: Boolean
+  allowCam: Boolean
   blockList: [ID!]
   passCode: String
   endedAt: DateTime
@@ -130,14 +130,14 @@ type MeetingMessage {
 }
 
 type MeetingSettings {
-  isMicOn: Boolean!
-  isCamOn: Boolean!
+  allowMic: Boolean!
+  allowCam: Boolean!
 }
 
 type ParticipantSettings {
   participantId: String!
-  isMicOn: Boolean!
-  isCamOn: Boolean!
+  allowMic: Boolean!
+  allowCam: Boolean!
 }
 
 type MeetingChannelPayload {
@@ -258,22 +258,22 @@ input HostMeetingInput {
 input ToggleParticipantMicAndCamInput {
   participantId: String!
   meetingId: String!
-  isMicOn: Boolean!
-  isCamOn: Boolean!
+  allowMic: Boolean!
+  allowCam: Boolean!
 }
 
 input ToggleMeetingMicAndCamInput {
   meetingId: String!
-  isCamOn: Boolean!
-  isMicOn: Boolean!
+  allowCam: Boolean!
+  allowMic: Boolean!
 }
 
 input JoinMeetingInput {
   meetingId: String!
   joinerId: ID!
   passCode: String
-  isCamOn: Boolean!
-  isMicOn: Boolean!
+  allowCam: Boolean!
+  allowMic: Boolean!
 }
 
 input BlockUserInput {

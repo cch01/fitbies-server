@@ -12,14 +12,14 @@ export const hostMeeting = ({ meetingModel }: MeetingServiceCtx) => async ({
 }: HostMeetingInput): Promise<Meeting> => {
   return new meetingModel({
     initiator,
-    isMicOn: isMeetingMicOn,
-    isCamOn: isMeetingCamOn,
+    allowMic: isMeetingMicOn,
+    allowCam: isMeetingCamOn,
     passCode,
     participants: [
       {
         _id: initiator,
-        isCamOn: isSelfCamOn,
-        isMicOn: isSelfMicOn,
+        allowCam: isSelfCamOn,
+        allowMic: isSelfMicOn,
       },
     ],
   }).save();
