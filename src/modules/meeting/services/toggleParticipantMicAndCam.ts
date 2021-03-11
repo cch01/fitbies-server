@@ -10,8 +10,8 @@ export const toggleParticipantMicAndCam = (ctx: MeetingServiceCtx) => async (
   {
     meetingId,
     participantId,
-    isCamOn,
-    isMicOn,
+    videoOff,
+    muted,
   }: ToggleParticipantMicAndCamInput,
   currentUser: User,
 ): Promise<Meeting> => {
@@ -36,8 +36,8 @@ export const toggleParticipantMicAndCam = (ctx: MeetingServiceCtx) => async (
     },
     {
       $set: {
-        'participants.$.isCamOn': isCamOn,
-        'participants.$.isMicOn': isMicOn,
+        'participants.$.videoOff': videoOff,
+        'participants.$.muted': muted,
       },
     },
     { useFindAndModify: true, new: true },
@@ -46,7 +46,7 @@ export const toggleParticipantMicAndCam = (ctx: MeetingServiceCtx) => async (
     type: MeetingEventType.TOGGLE_PARTICIPANT_SETTINGS,
     from: currentUser,
     toMeeting: updatedMeeting,
-    participantSettings: { participantId, isCamOn, isMicOn },
+    participantSettings: { participantId, videoOff, muted },
   });
 
   return updatedMeeting;

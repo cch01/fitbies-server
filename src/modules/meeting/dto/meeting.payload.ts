@@ -28,10 +28,10 @@ export class MeetingMessage {
 @ObjectType()
 export class MeetingSettings {
   @Field()
-  isMicOn: boolean;
+  muted: boolean;
 
   @Field()
-  isCamOn: boolean;
+  videoOff: boolean;
 }
 
 @ObjectType()
@@ -40,10 +40,10 @@ export class ParticipantSettings {
   participantId: string;
 
   @Field()
-  isMicOn: boolean;
+  muted: boolean;
 
   @Field()
-  isCamOn: boolean;
+  videoOff: boolean;
 }
 
 @ObjectType()
