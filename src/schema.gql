@@ -195,8 +195,8 @@ type Mutation {
   updateUser(updateUserInput: UpdateUserInput!): User
   resetPassword(resetPasswordInput: ResetPasswordInput!): User
   hostMeeting(hostMeetingInput: HostMeetingInput!): Meeting
-  toggleParticipantMicAndCam(toggleParticipantMicAndCamInput: ToggleParticipantMicAndCamInput!): Meeting
-  toggleMeetingMicAndCam(toggleMeetingMicAndCamInput: ToggleMeetingMicAndCamInput!): Meeting
+  toggleParticipantMedia(toggleParticipantMediaInput: ToggleParticipantMediaInput!): Meeting
+  toggleMeetingMedia(toggleMeetingMediaInput: ToggleMeetingMediaInput!): Meeting
   joinMeeting(joinMeetingInput: JoinMeetingInput!): Meeting
   endMeeting(userId: ID!, meetingId: String!): Meeting
   leaveMeeting(userId: ID!, meetingId: String!): Meeting!
@@ -253,14 +253,14 @@ input HostMeetingInput {
   meetingVideoOff: Boolean!
 }
 
-input ToggleParticipantMicAndCamInput {
+input ToggleParticipantMediaInput {
   participantId: String!
   meetingId: String!
   muted: Boolean!
   videoOff: Boolean!
 }
 
-input ToggleMeetingMicAndCamInput {
+input ToggleMeetingMediaInput {
   meetingId: String!
   videoOff: Boolean!
   muted: Boolean!

@@ -65,7 +65,7 @@ export class BlockUserInput {
 }
 
 @InputType()
-export class ToggleMeetingMicAndCamInput {
+export class ToggleMeetingMediaInput {
   @Field()
   meetingId: string;
 
@@ -77,7 +77,7 @@ export class ToggleMeetingMicAndCamInput {
 }
 
 @InputType()
-export class ToggleParticipantMicAndCamInput {
+export class ToggleParticipantMediaInput {
   @Field()
   participantId: string;
 
