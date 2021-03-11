@@ -13,8 +13,8 @@ import { joinMeeting } from './services/joinMeeting';
 import { leaveMeeting } from './services/leaveMeeting';
 import { meeting } from './services/meeting';
 import { sendMeetingMessage } from './services/sendMeetingMessage';
-import { toggleMeetingMicAndCam } from './services/toggleMeetingMicAndCam';
-import { toggleParticipantMicAndCam } from './services/toggleParticipantMicAndCam';
+import { toggleMeetingMedia } from './services/toggleMeetingMedia';
+import { toggleParticipantMedia } from './services/toggleParticipantMedia';
 import { unblockMeetingUser } from './services/unblockMeetingUser';
 
 export interface MeetingServiceCtx {
@@ -56,9 +56,9 @@ export class MeetingService {
 
   sendMeetingMessage = sendMeetingMessage(this.ctx);
 
-  toggleMeetingMicAndCam = toggleMeetingMicAndCam(this.ctx);
+  toggleMeetingMedia = toggleMeetingMedia(this.ctx);
 
-  toggleParticipantMicAndCam = toggleParticipantMicAndCam(this.ctx);
+  toggleParticipantMedia = toggleParticipantMedia(this.ctx);
 
   unblockMeetingUser = unblockMeetingUser(this.ctx);
 }

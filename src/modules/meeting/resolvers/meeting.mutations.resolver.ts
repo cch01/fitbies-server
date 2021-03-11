@@ -11,8 +11,8 @@ import {
   InviteMeetingInput,
   JoinMeetingInput,
   SendMeetingMessageInput,
-  ToggleMeetingMicAndCamInput,
-  ToggleParticipantMicAndCamInput,
+  ToggleMeetingMediaInput,
+  ToggleParticipantMediaInput,
 } from '../dto/meeting.input';
 import { Meeting } from '../meeting.model';
 import { MeetingService } from '../meeting.service';
@@ -48,12 +48,12 @@ export class MeetingMutationsResolver {
 
   @Mutation((returns) => Meeting, { nullable: true })
   @UseGuards(ActivatedUserGuard)
-  async toggleParticipantMicAndCam(
-    @Args('toggleParticipantMicAndCamInput')
-    input: ToggleParticipantMicAndCamInput,
+  async toggleParticipantMedia(
+    @Args('toggleParticipantMediaInput')
+    input: ToggleParticipantMediaInput,
     @CurrentUser() currentUser: User,
   ) {
-    return await this.meetingService.toggleParticipantMicAndCam(
+    return await this.meetingService.toggleParticipantMedia(
       input,
       currentUser,
     );
@@ -61,11 +61,11 @@ export class MeetingMutationsResolver {
 
   @Mutation((returns) => Meeting, { nullable: true })
   @UseGuards(ActivatedUserGuard)
-  async toggleMeetingMicAndCam(
-    @Args('toggleMeetingMicAndCamInput') input: ToggleMeetingMicAndCamInput,
+  async toggleMeetingMedia(
+    @Args('toggleMeetingMediaInput') input: ToggleMeetingMediaInput,
     @CurrentUser() currentUser: User,
   ) {
-    return await this.meetingService.toggleMeetingMicAndCam(input, currentUser);
+    return await this.meetingService.toggleMeetingMedia(input, currentUser);
   }
 
   @Mutation((returns) => Meeting, { nullable: true })

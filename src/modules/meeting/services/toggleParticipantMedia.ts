@@ -1,18 +1,13 @@
 import { ApolloError } from 'apollo-server-express';
 import { User } from 'src/modules/user/user.model';
 import { MeetingServiceCtx } from '../meeting.service';
-import { ToggleParticipantMicAndCamInput } from '../dto/meeting.input';
+import { ToggleParticipantMediaInput } from '../dto/meeting.input';
 import { MeetingEventType } from '../dto/meeting.payload';
 import { Meeting } from '../meeting.model';
 import { createMeetingEventsAndDispatch } from './createMeetingEventsAndDispatch';
 
-export const toggleParticipantMicAndCam = (ctx: MeetingServiceCtx) => async (
-  {
-    meetingId,
-    participantId,
-    videoOff,
-    muted,
-  }: ToggleParticipantMicAndCamInput,
+export const toggleParticipantMedia = (ctx: MeetingServiceCtx) => async (
+  { meetingId, participantId, videoOff, muted }: ToggleParticipantMediaInput,
   currentUser: User,
 ): Promise<Meeting> => {
   const { meetingModel, userService } = ctx;
