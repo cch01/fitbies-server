@@ -38,7 +38,7 @@ export class MeetingSubscriptionsResolver {
     const meeting = await this.meetingModel.findOne({ meetingId });
     if (!meeting) return false;
     const isUserInMeeting = meeting.participants.some(
-      (_p) => _p.isLeft && _p._id.toString() === ctx.user._id.toString(),
+      (_p) => !_p.isLeft && _p._id.toString() === ctx.user._id.toString(),
     );
     if (!isUserInMeeting) return false;
     return true;

@@ -13,6 +13,7 @@ export const toggleMeetingMicAndCam = (ctx: MeetingServiceCtx) => async (
   const { meetingModel, userService } = ctx;
   const targetMeeting = await meetingModel.findOne({
     meetingId,
+    endedAt: null,
   });
   if (!targetMeeting) throw new ApolloError('Meeting not found');
   const isPermitToWriteUser = await userService.isPermitToWriteUser(

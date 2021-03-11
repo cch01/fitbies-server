@@ -9,16 +9,10 @@ export class HostMeetingInput {
   passCode?: string;
 
   @Field()
-  isSelfMicOn: boolean;
+  meetingMuted: boolean;
 
   @Field()
-  isSelfCamOn: boolean;
-
-  @Field()
-  isMeetingMicOn: boolean;
-
-  @Field()
-  isMeetingCamOn: boolean;
+  meetingVideoOff: boolean;
 }
 
 @InputType()
@@ -31,12 +25,6 @@ export class JoinMeetingInput {
 
   @Field({ nullable: true })
   passCode?: string;
-
-  @Field()
-  allowCam: boolean;
-
-  @Field()
-  allowMic: boolean;
 }
 
 @InputType()
@@ -82,10 +70,10 @@ export class ToggleMeetingMicAndCamInput {
   meetingId: string;
 
   @Field()
-  allowCam: boolean;
+  videoOff: boolean;
 
   @Field()
-  allowMic: boolean;
+  muted: boolean;
 }
 
 @InputType()
@@ -97,8 +85,8 @@ export class ToggleParticipantMicAndCamInput {
   meetingId: string;
 
   @Field()
-  allowMic: boolean;
+  muted: boolean;
 
   @Field()
-  allowCam: boolean;
+  videoOff: boolean;
 }

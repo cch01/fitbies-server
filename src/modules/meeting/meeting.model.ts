@@ -19,12 +19,12 @@ export class Participant {
   nickname?: string;
 
   @Field({ nullable: true })
-  @Prop()
-  allowCam?: boolean;
+  @Prop({ default: false })
+  videoOff?: boolean;
 
   @Field({ nullable: true })
-  @Prop()
-  allowMic?: boolean;
+  @Prop({ default: false })
+  muted?: boolean;
 
   @Field({ nullable: true })
   @Prop({ default: () => new Date() })
@@ -70,11 +70,11 @@ export class Meeting {
 
   @Field({ nullable: true })
   @Prop()
-  allowMic: boolean;
+  muted: boolean;
 
   @Field({ nullable: true })
   @Prop()
-  allowCam: boolean;
+  videoOff: boolean;
 
   @Field((type) => [ID], { nullable: true })
   @Prop({

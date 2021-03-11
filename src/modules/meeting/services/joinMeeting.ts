@@ -7,7 +7,7 @@ import { Meeting } from '../meeting.model';
 import { createMeetingEventsAndDispatch } from './createMeetingEventsAndDispatch';
 
 export const joinMeeting = (ctx: MeetingServiceCtx) => async (
-  { meetingId, joinerId, passCode, allowCam, allowMic }: JoinMeetingInput,
+  { meetingId, joinerId, passCode }: JoinMeetingInput,
   currentUser: User,
 ): Promise<Meeting> => {
   const { meetingModel } = ctx;
@@ -38,7 +38,7 @@ export const joinMeeting = (ctx: MeetingServiceCtx) => async (
   );
 
   if (!joinedRecord) {
-    const newRecord = { _id: joinerId, allowMic, allowCam };
+    const newRecord = { _id: joinerId, joinedAt: new Date() };
     meeting.participants.push(newRecord);
     updatedMeeting = await meeting.save();
   } else {
@@ -52,8 +52,6 @@ export const joinMeeting = (ctx: MeetingServiceCtx) => async (
         $set: {
           'participants.$.joinedAt': new Date(),
           'participants.$.isLeft': false,
-          'participants.$.allowCam': allowCam,
-          'participants.$.allowMic': allowMic,
         },
       },
       { useFindAndModify: true, new: true },
