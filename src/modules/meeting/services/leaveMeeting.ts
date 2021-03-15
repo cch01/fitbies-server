@@ -54,6 +54,7 @@ export const leaveMeeting = (ctx: MeetingServiceCtx) => async (
       endedAt: null,
     });
     if (!meeting) return;
+    console.log('End Meeting');
     const usersInMeeting = meeting?.participants.some((p) => !p.isLeft);
     if (!usersInMeeting) {
       await meeting.set('endedAt', new Date()).save();
