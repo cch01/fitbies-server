@@ -80,18 +80,17 @@ export class MeetingSubscriptionsResolver {
       throw new ApolloError('Meeting has already ended');
     }
     console.log(`${currentUser._id} has subscripted meetingChannel`);
-    return this.pubSub.asyncIterator('meetingChannel');
 
-    // return withUnsubscribe(
-    //   this.pubSub.asyncIterator('meetingChannel'),
-    //   async () => {
-    //     console.log(`${currentUser.nickname} leaved`);
-    //     await this.meetingMutationsResolver.leaveMeeting(
-    //       meetingId,
-    //       userId,
-    //       currentUser,
-    //     );
-    //   },
-    // );
+    return withUnsubscribe(
+      this.pubSub.asyncIterator('meetingChannel'),
+      async () => {
+        console.log(`${currentUser.nickname} leaved`);
+        await this.meetingMutationsResolver.leaveMeeting(
+          meetingId,
+          userId,
+          currentUser,
+        );
+      },
+    );
   }
 }

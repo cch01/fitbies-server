@@ -35,7 +35,13 @@ export class User {
   lastName?: string;
 
   @IsEmail()
-  @Prop({ unique: true })
+  @Prop({
+    type: String,
+    index: {
+      unique: true,
+      partialFilterExpression: { email: { $type: 'string' } },
+    },
+  })
   @Field({ nullable: true })
   email?: string;
 

@@ -19,6 +19,7 @@ import * as _ from 'lodash';
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       installSubscriptionHandlers: true,
       subscriptions: {
+        keepAlive: 100000,
         path: process.env.GRAPHQL_PATH,
         onConnect: (param, ws, connectionContext) => {
           console.log('someone connected via websocket');
