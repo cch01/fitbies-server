@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
+import { RedisModule } from 'nestjs-redis';
 import { join } from 'path';
 import { UserModule } from './modules/user/user.module';
 import { CommonModule } from './modules/common/common.module';
@@ -14,6 +15,14 @@ import * as _ from 'lodash';
   imports: [
     MongooseModule.forRoot(process.env.DB_CONNECTION_URI, {
       useNewUrlParser: true,
+    }),
+    RedisModule.register({
+      url: process.env.REDIS_CONNECTION_STRING,
+      onClientReady: async (client) => {
+        client.on('error', (err) => {
+          console.error('Redis', err);
+        });
+      },
     }),
     GraphQLModule.forRoot({
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),

@@ -70,3 +70,18 @@ export class UserChannelPayload {
   @Field((type) => MeetingInvitation, { nullable: true })
   meetingInvitation?: MeetingInvitation;
 }
+
+@ObjectType()
+export class HealthTracking {
+  @Field()
+  heartRate: number;
+
+  @Field()
+  distance: number;
+
+  @Field()
+  steps: number;
+
+  @Field()
+  calories: number;
+}

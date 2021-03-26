@@ -3,7 +3,7 @@ import { Args, Mutation, Resolver, Context, ID } from '@nestjs/graphql';
 import { CurrentUser } from 'src/decorators/user.decorator';
 import { ActivatedUserGuard } from 'src/guards/activated.user.guard';
 import {
-  AnonymousSignUpInput,
+  AnonymousSignUpInput, HealthTrackingInput,
   ResetPasswordInput,
   SignInInput,
   SignUpInput,
@@ -93,5 +93,17 @@ export class UserMutationsResolver {
       currentUser,
       resetPasswordInput,
     );
+  }
+
+  @Mutation((returns) => Boolean, { nullable: true })
+  async updateHealthTracking(
+    @Args('healthTrackingInput') healthTrackingInput: HealthTrackingInput,
+    @CurrentUser() currentUser: User,
+  ): Promise<boolean> {
+    await this.userService.updateHealthTracking(
+      currentUser,
+      healthTrackingInput,
+    );
+    return true;
   }
 }

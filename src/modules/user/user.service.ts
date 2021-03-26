@@ -1,8 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as Redis from 'ioredis';
 import {
   AnonymousSignUpInput,
+  HealthTrackingInput,
   ResetPasswordInput,
   SignInInput,
   SignUpInput,
@@ -24,11 +26,13 @@ import {
   UserChannelEventType,
   UserChannelPayload,
   UserState,
+  HealthTracking,
 } from './dto/user.payload';
 import EmailHelper from 'src/utils/email.helper';
 import * as jwt from 'jsonwebtoken';
 import * as _ from 'lodash';
 import { SessionDocument } from '../session/session.model';
+import { RedisService } from 'nestjs-redis';
 @Injectable()
 export class UserService {
   constructor(
@@ -36,6 +40,7 @@ export class UserService {
     @InjectModel('session') private sessionModel: Model<SessionDocument>,
     @Inject('pubSub') private pubSub: PubSubEngine,
     private readonly sessionService: SessionService,
+    private readonly redisService: RedisService,
   ) {}
 
   async createUser(signUpInput: SignUpInput): Promise<User> {
@@ -125,6 +130,34 @@ export class UserService {
 
   validatePassword(user: User, password: string): boolean {
     return bcrypt.compareSync(password, user.password);
+  }
+
+  async updateHealthTracking(
+    user: User,
+    healthTracking: HealthTrackingInput,
+  ): Promise<void> {
+    const client: Redis.Redis = await this.redisService.getClient(user._id);
+    await client
+      .pipeline()
+      .set('heartRate', healthTracking.heartRate)
+      .set('calories', healthTracking.calories)
+      .set('distance', healthTracking.distance)
+      .set('steps', healthTracking.steps)
+      .exec();
+    return;
+  }
+
+  async readHealthTracking(
+    user: User,
+    targetUserId: string,
+  ): Promise<HealthTracking> {
+    const client: Redis.Redis = await this.redisService.getClient(targetUserId);
+    return {
+      heartRate: +(await client.get('heartRate')),
+      calories: +(await client.get('calories')),
+      distance: +(await client.get('distance')),
+      steps: +(await client.get('steps')),
+    };
   }
 
   createUserEventsAndDispatch(

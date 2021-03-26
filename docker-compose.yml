@@ -1,7 +1,7 @@
 version: '3.8'
 networks:
   backend-servers:
-    external: 
+    external:
       name: backend-servers
 volumes:
   db:
@@ -20,6 +20,16 @@ services:
     volumes:
       - db:/data/db
       - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    networks:
+      - backend-servers
+  redis:
+    image: 'bitnami/redis:latest'
+    restart: always
+    container_name: redis
+    ports:
+      - 6379:6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
     networks:
       - backend-servers
 

@@ -64,3 +64,18 @@ export class AnonymousSignUpInput {
   @Field()
   nickname: string;
 }
+
+@InputType()
+export class HealthTrackingInput {
+  @Field()
+  heartRate: number;
+
+  @Field()
+  distance: number;
+
+  @Field()
+  steps: number;
+
+  @Field()
+  calories: number;
+}
